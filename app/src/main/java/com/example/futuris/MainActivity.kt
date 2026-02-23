@@ -360,7 +360,7 @@ private fun SignupScreen(onGoLogin: () -> Unit) {
     }
 }
 
-/* -------------------- Reusable UI -------------------- */
+/* ------------------- Reusable UI ------------------- */
 @Composable
 private fun FuturisField(
     value: String,
