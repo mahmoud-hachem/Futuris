@@ -5,13 +5,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.example.futuris.screens.alerts.AlertsScreen
 import com.example.futuris.screens.auth.CreateNewPasswordScreen
 import com.example.futuris.screens.auth.EmailVerificationScreen
 import com.example.futuris.screens.auth.LoginScreen
 import com.example.futuris.screens.auth.ResetPasswordScreen
 import com.example.futuris.screens.auth.SignupScreen
 import com.example.futuris.screens.auth.SplashScreen
+import com.example.futuris.screens.chat.ChatScreen
 import com.example.futuris.screens.home.HomeScreen
+import com.example.futuris.screens.profile.ProfileScreen
 
 enum class Screen {
     Splash,
@@ -20,16 +23,20 @@ enum class Screen {
     ResetPassword,
     EmailVerification,
     CreateNewPassword,
-    Home
+    Home,
+    Chat,
+    Alerts,
+    Profile
 }
 
 @Composable
 fun FuturisApp() {
     var currentScreen by remember { mutableStateOf(Screen.Splash) }
 
-    // temporary test value
-    // later this should come from the logged-in user
+    // temporary frontend values
     var userFirstName by remember { mutableStateOf("Alex") }
+    var userLastName by remember { mutableStateOf("Johnson") }
+    var userEmail by remember { mutableStateOf("alex@email.com") }
 
     when (currentScreen) {
         Screen.Splash -> SplashScreen(
@@ -62,21 +69,53 @@ fun FuturisApp() {
         Screen.Home -> HomeScreen(
             firstName = userFirstName,
             currentTab = "home",
-            onCategoryClick = { category ->
-                // later each category page
-            },
+            onCategoryClick = { },
             onTabSelected = { tab ->
                 when (tab) {
                     "home" -> currentScreen = Screen.Home
-                    "chat" -> {
-                        // later add Chat screen
-                    }
-                    "alerts" -> {
-                        // later add Alerts screen
-                    }
-                    "profile" -> {
-                        // later add Profile screen
-                    }
+                    "chat" -> currentScreen = Screen.Chat
+                    "alerts" -> currentScreen = Screen.Alerts
+                    "profile" -> currentScreen = Screen.Profile
+                }
+            }
+        )
+
+        Screen.Chat -> ChatScreen(
+            firstName = userFirstName,
+            currentTab = "chat",
+            onTabSelected = { tab ->
+                when (tab) {
+                    "home" -> currentScreen = Screen.Home
+                    "chat" -> currentScreen = Screen.Chat
+                    "alerts" -> currentScreen = Screen.Alerts
+                    "profile" -> currentScreen = Screen.Profile
+                }
+            }
+        )
+
+        Screen.Alerts -> AlertsScreen(
+            currentTab = "alerts",
+            onTabSelected = { tab ->
+                when (tab) {
+                    "home" -> currentScreen = Screen.Home
+                    "chat" -> currentScreen = Screen.Chat
+                    "alerts" -> currentScreen = Screen.Alerts
+                    "profile" -> currentScreen = Screen.Profile
+                }
+            }
+        )
+
+        Screen.Profile -> ProfileScreen(
+            firstName = userFirstName,
+            lastName = userLastName,
+            email = userEmail,
+            currentTab = "profile",
+            onTabSelected = { tab ->
+                when (tab) {
+                    "home" -> currentScreen = Screen.Home
+                    "chat" -> currentScreen = Screen.Chat
+                    "alerts" -> currentScreen = Screen.Alerts
+                    "profile" -> currentScreen = Screen.Profile
                 }
             }
         )
