@@ -61,11 +61,23 @@ fun FuturisApp() {
 
         Screen.Home -> HomeScreen(
             firstName = userFirstName,
-            onCategoryClick = { categoryKey ->
-                // later navigate by category
+            currentTab = "home",
+            onCategoryClick = { category ->
+                // later each category page
             },
             onTabSelected = { tab ->
-                // later navigate bottom tabs
+                when (tab) {
+                    "home" -> currentScreen = Screen.Home
+                    "chat" -> {
+                        // later add Chat screen
+                    }
+                    "alerts" -> {
+                        // later add Alerts screen
+                    }
+                    "profile" -> {
+                        // later add Profile screen
+                    }
+                }
             }
         )
     }

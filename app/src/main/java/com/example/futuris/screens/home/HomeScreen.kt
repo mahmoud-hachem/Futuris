@@ -1,8 +1,10 @@
 package com.example.futuris.screens.home
 
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -54,6 +57,7 @@ data class BottomTabItem(
 @Composable
 fun HomeScreen(
     firstName: String,
+    currentTab: String,
     onCategoryClick: (String) -> Unit,
     onTabSelected: (String) -> Unit
 ) {
@@ -84,7 +88,7 @@ fun HomeScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = R.drawable.home_bg),
-            contentDescription = "Home background",
+            contentDescription = "Background",
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
@@ -95,9 +99,9 @@ fun HomeScreen(
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            Color(0x33000000),
                             Color(0x22000000),
-                            Color(0x44000000)
+                            Color(0x18000000),
+                            Color(0x35000000)
                         )
                     )
                 )
@@ -107,33 +111,34 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 14.dp)
+                .padding(horizontal = 18.dp)
+                .padding(top = 24.dp, bottom = 10.dp)
         ) {
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(2.dp))
 
             Text(
                 text = "Hello, $safeFirstName🔮",
                 color = Color.White,
-                fontSize = 27.sp,
-                fontWeight = FontWeight.SemiBold
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
             )
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             Text(
                 text = "What would you like to explore today?",
-                color = Color(0xFFE7DDF5),
-                fontSize = 15.sp
+                color = Color(0xFFF0E5FA),
+                fontSize = 14.sp
             )
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                contentPadding = PaddingValues(bottom = 18.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(bottom = 6.dp)
             ) {
                 items(categories) { category ->
                     CategoryCard(
@@ -146,8 +151,8 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            FuturisBottomBar(
-                selectedTab = "home",
+            GlassBottomBar(
+                selectedTab = currentTab,
                 tabs = tabs,
                 onTabSelected = onTabSelected
             )
@@ -168,9 +173,15 @@ fun CategoryCard(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(1f)
-                .clip(RoundedCornerShape(22.dp))
+                .aspectRatio(1.28f)
+                .clip(RoundedCornerShape(20.dp))
                 .clickable { onClick() }
+                .background(Color(0x20000000))
+                .border(
+                    width = 1.dp,
+                    color = Color(0x30FFFFFF),
+                    shape = RoundedCornerShape(20.dp)
+                )
         ) {
             Image(
                 painter = painterResource(id = imageRes),
@@ -185,102 +196,135 @@ fun CategoryCard(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color(0x14000000),
-                                Color(0x26000000),
-                                Color(0x3A000000)
+                                Color.Transparent,
+                                Color(0x12000000),
+                                Color(0x28000000)
                             )
                         )
                     )
             )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(6.dp))
 
         Text(
             text = title,
             color = Color.White,
-            fontSize = 14.sp,
-            lineHeight = 18.sp,
-            textAlign = TextAlign.Center
+            fontSize = 13.sp,
+            lineHeight = 16.sp,
+            textAlign = TextAlign.Center,
+            maxLines = 2
         )
     }
 }
 
 @Composable
-fun FuturisBottomBar(
+fun GlassBottomBar(
     selectedTab: String,
     tabs: List<BottomTabItem>,
     onTabSelected: (String) -> Unit
 ) {
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(28.dp))
+            .navigationBarsPadding()
+            .clip(RoundedCornerShape(26.dp))
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xCC53127A),
-                        Color(0xCC2A063D)
+                        Color(0x55FFFFFF),
+                        Color(0x22FFFFFF)
                     )
                 )
             )
-            .padding(horizontal = 10.dp, vertical = 10.dp)
-            .navigationBarsPadding(),
-        horizontalArrangement = Arrangement.SpaceAround,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        tabs.forEach { tab ->
-            BottomBarItem(
-                label = tab.label,
-                iconRes = tab.iconRes,
-                selected = selectedTab == tab.key,
-                onClick = { onTabSelected(tab.key) }
+            .border(
+                BorderStroke(
+                    1.dp,
+                    Brush.linearGradient(
+                        colors = listOf(
+                            Color(0x90F2B6FF),
+                            Color(0x50FFFFFF),
+                            Color(0x70C77DFF)
+                        )
+                    )
+                ),
+                shape = RoundedCornerShape(26.dp)
             )
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0x883A0B57),
+                        Color(0xAA1A0327)
+                    )
+                )
+            )
+            .padding(horizontal = 6.dp, vertical = 5.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            tabs.forEach { tab ->
+                GlassBottomBarItem(
+                    label = tab.label,
+                    iconRes = tab.iconRes,
+                    selected = selectedTab == tab.key,
+                    onClick = { onTabSelected(tab.key) }
+                )
+            }
         }
     }
 }
 
 @Composable
-fun BottomBarItem(
+fun GlassBottomBarItem(
     label: String,
-    @DrawableRes imageRes: Int? = null,
     @DrawableRes iconRes: Int,
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    val activeColor = Color(0xFFF2B4FF)
-    val inactiveColor = Color(0xFFD6B8EC)
+    val activeColor = Color(0xFFF2B2FF)
+    val inactiveColor = Color(0xFFD6C1E8)
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .clip(RoundedCornerShape(18.dp))
             .clickable { onClick() }
-            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .padding(horizontal = 8.dp, vertical = 2.dp)
     ) {
         Box(
-            contentAlignment = Alignment.TopCenter
+            contentAlignment = Alignment.Center
         ) {
             if (selected) {
                 Box(
                     modifier = Modifier
-                        .size(7.dp)
+                        .size(30.dp)
                         .clip(CircleShape)
-                        .background(activeColor)
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(
+                                    Color(0x55F1A8FF),
+                                    Color.Transparent
+                                )
+                            )
+                        )
                 )
             }
 
             Image(
                 painter = painterResource(id = iconRes),
                 contentDescription = label,
-                modifier = Modifier
-                    .padding(top = 10.dp)
-                    .size(22.dp),
-                contentScale = ContentScale.Fit
+                modifier = Modifier.size(22.dp),
+                contentScale = ContentScale.Fit,
+                colorFilter = ColorFilter.tint(
+                    if (selected) activeColor else inactiveColor
+                )
             )
         }
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(2.dp))
 
         Text(
             text = label,
