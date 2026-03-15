@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -20,11 +19,15 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -45,13 +48,13 @@ import com.example.futuris.R
 data class HomeCategory(
     val title: String,
     val key: String,
-    @param:DrawableRes val imageRes: Int
+    @DrawableRes val imageRes: Int
 )
 
 data class BottomTabItem(
     val label: String,
     val key: String,
-    @param:DrawableRes val iconRes: Int
+    @DrawableRes val iconRes: Int
 )
 
 @Composable
@@ -59,17 +62,16 @@ fun HomeScreen(
     firstName: String,
     currentTab: String,
     onCategoryClick: (String) -> Unit,
-    onTabSelected: (String) -> Unit
+    onTabSelected: (String) -> Unit,
+    onDestinyQuizClick: () -> Unit = {}
 ) {
-    val safeFirstName = firstName.trim().ifBlank { "User" }
+    val safeFirstName = firstName.trim().ifBlank { "Alex" }
 
     val categories = remember {
         listOf(
             HomeCategory("Love & Relationships", "love", R.drawable.card_love),
             HomeCategory("Career & Studies", "career", R.drawable.card_career),
-            HomeCategory("Money", "money", R.drawable.card_money),
             HomeCategory("Finance", "finance", R.drawable.card_finance),
-            HomeCategory("Social & Family", "social", R.drawable.card_social),
             HomeCategory("Mood & Energy", "mood", R.drawable.card_mood),
             HomeCategory("Decisions & Guidance", "decisions", R.drawable.card_decisions),
             HomeCategory("Life Path", "lifepath", R.drawable.card_lifepath)
@@ -99,9 +101,9 @@ fun HomeScreen(
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            Color(0x22000000),
-                            Color(0x18000000),
-                            Color(0x35000000)
+                            Color(0x1A000000),
+                            Color(0x12000000),
+                            Color(0x33000000)
                         )
                     )
                 )
@@ -111,45 +113,61 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .padding(horizontal = 18.dp)
-                .padding(top = 24.dp, bottom = 10.dp)
+                .padding(horizontal = 12.dp)
+                .padding(top = 34.dp, bottom = 10.dp)
         ) {
-            Spacer(modifier = Modifier.height(2.dp))
-
             Text(
                 text = "Hello, $safeFirstName🔮",
                 color = Color.White,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
+                fontSize = 23.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(start = 18.dp)
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = "What would you like to explore today?",
-                color = Color(0xFFF0E5FA),
-                fontSize = 14.sp
+                color = Color(0xFFE8D8F8),
+                fontSize = 14.sp,
+                modifier = Modifier.padding(start = 18.dp)
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                contentPadding = PaddingValues(bottom = 6.dp)
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                contentPadding = PaddingValues(bottom = 14.dp)
             ) {
                 items(categories) { category ->
-                    CategoryCard(
-                        title = category.title,
-                        imageRes = category.imageRes,
-                        onClick = { onCategoryClick(category.key) }
-                    )
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CategoryCard(
+                            title = category.title,
+                            imageRes = category.imageRes,
+                            onClick = { onCategoryClick(category.key) }
+                        )
+                    }
+                }
+
+                item(span = { GridItemSpan(2) }) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        DestinyQuizCard(
+                            onClick = onDestinyQuizClick
+                        )
+                    }
                 }
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
 
             GlassBottomBar(
                 selectedTab = currentTab,
@@ -168,19 +186,19 @@ fun CategoryCard(
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.width(156.dp)
     ) {
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1.28f)
-                .clip(RoundedCornerShape(20.dp))
+                .width(350.dp)
+                .height(140.dp)
+                .clip(RoundedCornerShape(18.dp))
                 .clickable { onClick() }
-                .background(Color(0x20000000))
+                .background(Color(0x22000000))
                 .border(
                     width = 1.dp,
-                    color = Color(0x30FFFFFF),
-                    shape = RoundedCornerShape(20.dp)
+                    color = Color(0x26FFFFFF),
+                    shape = RoundedCornerShape(18.dp)
                 )
         ) {
             Image(
@@ -197,24 +215,106 @@ fun CategoryCard(
                         Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                Color(0x12000000),
-                                Color(0x28000000)
+                                Color(0x10000000),
+                                Color(0x25000000)
                             )
                         )
                     )
             )
         }
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         Text(
             text = title,
             color = Color.White,
-            fontSize = 13.sp,
-            lineHeight = 16.sp,
+            fontSize = 12.sp,
+            lineHeight = 14.sp,
             textAlign = TextAlign.Center,
             maxLines = 2
         )
+    }
+}
+
+@Composable
+fun DestinyQuizCard(
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .width(350.dp)
+            .height(140.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0x662E0C52),
+                        Color(0x88310C56)
+                    )
+                )
+            )
+            .border(
+                BorderStroke(1.dp, Color(0x66C68CFF)),
+                shape = RoundedCornerShape(24.dp)
+            )
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 14.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.destiny),
+                    contentDescription = "Destiny Quiz",
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(50.dp)),
+                    contentScale = ContentScale.Crop
+                )
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Destiny Quiz",
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = "Let Futuris guide your future\nthrough questions",
+                        color = Color(0xFFE6D7F6),
+                        fontSize = 13.sp,
+                        lineHeight = 17.sp
+                    )
+                }
+            }
+
+            Button(
+                onClick = onClick,
+                shape = RoundedCornerShape(50),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF7B4BD0),
+                    contentColor = Color.White
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(44.dp)
+            ) {
+                Text(
+                    text = "Start Prediction",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
     }
 }
 
@@ -228,37 +328,20 @@ fun GlassBottomBar(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .clip(RoundedCornerShape(26.dp))
+            .clip(RoundedCornerShape(24.dp))
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0x55FFFFFF),
-                        Color(0x22FFFFFF)
+                        Color(0x663B0B57),
+                        Color(0x9920032E)
                     )
                 )
             )
             .border(
-                BorderStroke(
-                    1.dp,
-                    Brush.linearGradient(
-                        colors = listOf(
-                            Color(0x90F2B6FF),
-                            Color(0x50FFFFFF),
-                            Color(0x70C77DFF)
-                        )
-                    )
-                ),
-                shape = RoundedCornerShape(26.dp)
+                BorderStroke(1.dp, Color(0x55C68CFF)),
+                shape = RoundedCornerShape(24.dp)
             )
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0x883A0B57),
-                        Color(0xAA1A0327)
-                    )
-                )
-            )
-            .padding(horizontal = 6.dp, vertical = 5.dp)
+            .padding(horizontal = 8.dp, vertical = 8.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -284,7 +367,7 @@ fun GlassBottomBarItem(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    val activeColor = Color(0xFFF2B2FF)
+    val activeColor = Color(0xFFF2A8FF)
     val inactiveColor = Color(0xFFD6C1E8)
 
     Column(
@@ -292,11 +375,9 @@ fun GlassBottomBarItem(
         modifier = Modifier
             .clip(RoundedCornerShape(18.dp))
             .clickable { onClick() }
-            .padding(horizontal = 8.dp, vertical = 2.dp)
+            .padding(horizontal = 8.dp, vertical = 3.dp)
     ) {
-        Box(
-            contentAlignment = Alignment.Center
-        ) {
+        Box(contentAlignment = Alignment.Center) {
             if (selected) {
                 Box(
                     modifier = Modifier
