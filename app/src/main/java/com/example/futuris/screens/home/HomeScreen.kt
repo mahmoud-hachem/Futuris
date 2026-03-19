@@ -113,11 +113,11 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .padding(horizontal = 12.dp)
-                .padding(top = 34.dp, bottom = 10.dp)
+                .navigationBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 10.dp)
         ) {
             Text(
-                text = "Hello, $safeFirstName🔮",
+                text = "Hello, $safeFirstName 🔮",
                 color = Color.White,
                 fontSize = 23.sp,
                 fontWeight = FontWeight.Medium,
@@ -138,9 +138,9 @@ fun HomeScreen(
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                contentPadding = PaddingValues(bottom = 14.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(bottom = 16.dp)
             ) {
                 items(categories) { category ->
                     Box(
@@ -186,19 +186,19 @@ fun CategoryCard(
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(156.dp)
+        modifier = Modifier.fillMaxWidth()
     ) {
         Box(
             modifier = Modifier
-                .width(350.dp)
-                .height(140.dp)
-                .clip(RoundedCornerShape(18.dp))
+                .fillMaxWidth()
+                .height(125.dp)
+                .clip(RoundedCornerShape(20.dp))
                 .clickable { onClick() }
                 .background(Color(0x22000000))
                 .border(
                     width = 1.dp,
-                    color = Color(0x26FFFFFF),
-                    shape = RoundedCornerShape(18.dp)
+                    color = Color(0x30FFFFFF),
+                    shape = RoundedCornerShape(20.dp)
                 )
         ) {
             Image(
@@ -215,21 +215,22 @@ fun CategoryCard(
                         Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                Color(0x10000000),
-                                Color(0x25000000)
+                                Color(0x08000000),
+                                Color(0x22000000)
                             )
                         )
                     )
             )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         Text(
             text = title,
-            color = Color.White,
-            fontSize = 12.sp,
-            lineHeight = 14.sp,
+            color = Color(0xFFF7EEFF),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            lineHeight = 18.sp,
             textAlign = TextAlign.Center,
             maxLines = 2
         )
@@ -242,8 +243,8 @@ fun DestinyQuizCard(
 ) {
     Box(
         modifier = Modifier
-            .width(350.dp)
-            .height(140.dp)
+            .fillMaxWidth()
+            .height(165.dp)
             .clip(RoundedCornerShape(24.dp))
             .background(
                 Brush.verticalGradient(
@@ -271,7 +272,7 @@ fun DestinyQuizCard(
                     painter = painterResource(id = R.drawable.destiny),
                     contentDescription = "Destiny Quiz",
                     modifier = Modifier
-                        .size(80.dp)
+                        .size(95.dp)
                         .clip(RoundedCornerShape(50.dp)),
                     contentScale = ContentScale.Crop
                 )
@@ -282,8 +283,8 @@ fun DestinyQuizCard(
                     Text(
                         text = "Destiny Quiz",
                         color = Color.White,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -410,6 +411,7 @@ fun GlassBottomBarItem(
         Text(
             text = label,
             color = if (selected) activeColor else inactiveColor,
+            fontWeight = FontWeight.Medium,
             fontSize = 12.sp
         )
     }
