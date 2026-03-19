@@ -116,8 +116,13 @@ fun HomeScreen(
                 .navigationBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 10.dp)
         ) {
+            val greeting = when (java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)) {
+                in 5..11 -> "Good morning"
+                in 12..17 -> "Good afternoon"
+                else -> "Good evening"
+            }
             Text(
-                text = "Hello, $safeFirstName 🔮",
+                text = "$greeting, $safeFirstName 🔮",
                 color = Color.White,
                 fontSize = 23.sp,
                 fontWeight = FontWeight.Medium,
@@ -125,9 +130,14 @@ fun HomeScreen(
             )
 
             Spacer(modifier = Modifier.height(8.dp))
-
+            val message = listOf(
+                "Let’s explore your path today",
+                "Your journey starts here",
+                "Choose where to begin",
+                "Discover what awaits you"
+            ).random()
             Text(
-                text = "What would you like to explore today?",
+                text = message,
                 color = Color(0xFFE8D8F8),
                 fontSize = 14.sp,
                 modifier = Modifier.padding(start = 18.dp)

@@ -17,21 +17,26 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.futuris.R
-import com.example.futuris.components.FuturisBackground
-import com.example.futuris.components.FuturisButton
-import com.example.futuris.components.FuturisField
-import com.example.futuris.components.FuturisPasswordField
-import com.example.futuris.ui.theme.LinkPurple
-import com.example.futuris.ui.theme.SoftText
-import com.example.futuris.ui.theme.TitleWhite
 import androidx.compose.ui.graphics.Color
+import com.example.futuris.R
+import com.example.futuris.backend.RegisterRequest
+import com.example.futuris.backend.RetrofitClient
+import com.example.futuris.components.*
+import com.example.futuris.ui.theme.*
+import kotlinx.coroutines.launch
+import android.widget.Toast
+import android.os.Handler
+import android.os.Looper
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
+
 fun SignupScreen(onGoLogin: () -> Unit) {
+    val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
 
+    // ===== USER DATA =====
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
     var dateOfBirth by remember { mutableStateOf("") }
@@ -41,8 +46,19 @@ fun SignupScreen(onGoLogin: () -> Unit) {
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
-    var genderExpanded by remember { mutableStateOf(false) }
 
+    // NEW
+    var lifeFocus by remember { mutableStateOf("") }
+    var state by remember { mutableStateOf("") }
+    var intent by remember { mutableStateOf("") }
+
+    // ===== DROPDOWNS =====
+    var genderExpanded by remember { mutableStateOf(false) }
+    var focusExpanded by remember { mutableStateOf(false) }
+    var stateExpanded by remember { mutableStateOf(false) }
+    var intentExpanded by remember { mutableStateOf(false) }
+
+    // ===== ERRORS =====
     var firstNameError by remember { mutableStateOf("") }
     var lastNameError by remember { mutableStateOf("") }
     var dateError by remember { mutableStateOf("") }
@@ -51,6 +67,10 @@ fun SignupScreen(onGoLogin: () -> Unit) {
     var emailError by remember { mutableStateOf("") }
     var passwordError by remember { mutableStateOf("") }
     var confirmPasswordError by remember { mutableStateOf("") }
+    var focusError by remember { mutableStateOf("") }
+    var stateError by remember { mutableStateOf("") }
+    var intentError by remember { mutableStateOf("") }
+
 
     FuturisBackground {
         Column(
@@ -60,6 +80,7 @@ fun SignupScreen(onGoLogin: () -> Unit) {
                 .padding(horizontal = 22.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
             Spacer(modifier = Modifier.height(34.dp))
 
             Image(
@@ -70,282 +91,262 @@ fun SignupScreen(onGoLogin: () -> Unit) {
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            Text(
-                text = "Create account",
-                color = TitleWhite,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = "Sign up to get started",
-                color = SoftText,
-                fontSize = 14.sp
-            )
+            Text("Create account", color = TitleWhite, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text("Sign up to get started", color = SoftText, fontSize = 14.sp)
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                Box(modifier = Modifier.weight(1f)) {
-                    Column {
-                        FuturisField(
-                            value = firstName,
-                            onValueChange = {
-                                firstName = it
-                                firstNameError = ""
-                            },
-                            placeholder = "First name",
-                            height = 44
-                        )
-                        if (firstNameError.isNotEmpty()) {
-                            ErrorText(firstNameError)
-                        }
-                    }
+            // ===== NAME =====
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+
+                Column(modifier = Modifier.weight(1f)) {
+                    FuturisField(
+                        value = firstName,
+                        onValueChange = {
+                            firstName = it
+                            firstNameError = ""
+                        },
+                        placeholder = "First name",
+                        height = 44
+                    )
+                    if (firstNameError.isNotEmpty()) ErrorText(firstNameError)
                 }
 
-                Box(modifier = Modifier.weight(1f)) {
-                    Column {
-                        FuturisField(
-                            value = lastName,
-                            onValueChange = {
-                                lastName = it
-                                lastNameError = ""
-                            },
-                            placeholder = "Last name",
-                            height = 44
-                        )
-                        if (lastNameError.isNotEmpty()) {
-                            ErrorText(lastNameError)
-                        }
-                    }
+                Column(modifier = Modifier.weight(1f)) {
+                    FuturisField(
+                        value = lastName,
+                        onValueChange = {
+                            lastName = it
+                            lastNameError = ""
+                        },
+                        placeholder = "Last name",
+                        height = 44
+                    )
+                    if (lastNameError.isNotEmpty()) ErrorText(lastNameError)
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                Box(modifier = Modifier.weight(1f)) {
-                    Column {
-                        FuturisField(
-                            value = dateOfBirth,
-                            onValueChange = {
-                                dateOfBirth = it
-                                dateError = ""
-                            },
-                            placeholder = "DD/MM/YYYY",
-                            height = 44
-                        )
-                        if (dateError.isNotEmpty()) {
-                            ErrorText(dateError)
-                        }
-                    }
+            // ===== DOB + GENDER =====
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+
+                Column(modifier = Modifier.weight(1f)) {
+                    FuturisField(
+                        value = dateOfBirth,
+                        onValueChange = {
+                            dateOfBirth = it
+                            dateError = ""
+                        },
+                        placeholder = "DD/MM/YYYY",
+                        height = 44
+                    )
+                    if (dateError.isNotEmpty()) ErrorText(dateError)
                 }
 
-                Box(modifier = Modifier.weight(1f)) {
-                    Column {
-                        Box {
-                            FuturisField(
-                                value = gender,
-                                onValueChange = {},
-                                placeholder = "Gender",
-                                height = 44
-                            )
+                Column(modifier = Modifier.weight(1f)) {
+                    Box {
+                        FuturisField(
+                            value = gender,
+                            onValueChange = {},
+                            placeholder = "Gender",
+                            height = 44
+                        )
 
-                            Box(
-                                modifier = Modifier
-                                    .matchParentSize()
-                                    .clickable(
-                                        indication = null,
-                                        interactionSource = remember { MutableInteractionSource() }
-                                    ) {
-                                        genderExpanded = true
-                                        genderError = ""
-                                    }
-                            )
+                        Box(
+                            modifier = Modifier.matchParentSize().clickable(
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() }
+                            ) { genderExpanded = true }
+                        )
 
-                            DropdownMenu(
-                                expanded = genderExpanded,
-                                onDismissRequest = { genderExpanded = false }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text("Male") },
-                                    onClick = {
-                                        gender = "Male"
-                                        genderExpanded = false
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Female") },
-                                    onClick = {
-                                        gender = "Female"
-                                        genderExpanded = false
-                                    }
-                                )
+                        DropdownMenu(expanded = genderExpanded, onDismissRequest = { genderExpanded = false }) {
+                            listOf("Male", "Female").forEach {
+                                DropdownMenuItem(text = { Text(it) }, onClick = {
+                                    gender = it
+                                    genderExpanded = false
+                                })
                             }
                         }
-
-                        if (genderError.isNotEmpty()) {
-                            ErrorText(genderError)
-                        }
                     }
+                    if (genderError.isNotEmpty()) ErrorText(genderError)
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Column(modifier = Modifier.fillMaxWidth()) {
-                FuturisField(
-                    value = username,
-                    onValueChange = {
-                        username = it
-                        usernameError = ""
-                    },
-                    placeholder = "Username"
-                )
-                if (usernameError.isNotEmpty()) {
-                    ErrorText(usernameError)
-                }
-            }
+            // ===== USERNAME =====
+            FuturisField(
+                value = username,
+                onValueChange = {
+                    username = it
+                    usernameError = ""
+                },
+                placeholder = "Username"
+            )
+            if (usernameError.isNotEmpty()) ErrorText(usernameError)
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Column(modifier = Modifier.fillMaxWidth()) {
-                FuturisField(
-                    value = email,
-                    onValueChange = {
-                        email = it
-                        emailError = ""
-                    },
-                    placeholder = "Email address"
-                )
-                if (emailError.isNotEmpty()) {
-                    ErrorText(emailError)
-                }
-            }
+            // ===== EMAIL =====
+            FuturisField(
+                value = email,
+                onValueChange = {
+                    email = it
+                    emailError = ""
+                },
+                placeholder = "Email address"
+            )
+            if (emailError.isNotEmpty()) ErrorText(emailError)
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Column(modifier = Modifier.fillMaxWidth()) {
-                FuturisPasswordField(
-                    value = password,
-                    onValueChange = {
-                        password = it
-                        passwordError = ""
-                    },
-                    placeholder = "Password",
-                    passwordVisible = showPassword,
-                    onTogglePassword = { showPassword = !showPassword }
-                )
-                if (passwordError.isNotEmpty()) {
-                    ErrorText(passwordError)
-                }
-            }
+            // ===== PASSWORD =====
+            FuturisPasswordField(
+                value = password,
+                onValueChange = {
+                    password = it
+                    passwordError = ""
+                },
+                placeholder = "Password",
+                passwordVisible = showPassword,
+                onTogglePassword = { showPassword = !showPassword }
+            )
+            if (passwordError.isNotEmpty()) ErrorText(passwordError)
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Column(modifier = Modifier.fillMaxWidth()) {
-                FuturisPasswordField(
-                    value = confirmPassword,
-                    onValueChange = {
-                        confirmPassword = it
-                        confirmPasswordError = ""
-                    },
-                    placeholder = "Confirm password",
-                    passwordVisible = false,
-                    onTogglePassword = null
-                )
-                if (confirmPasswordError.isNotEmpty()) {
-                    ErrorText(confirmPasswordError)
-                }
-            }
+            FuturisPasswordField(
+                value = confirmPassword,
+                onValueChange = {
+                    confirmPassword = it
+                    confirmPasswordError = ""
+                },
+                placeholder = "Confirm password",
+                passwordVisible = false,
+                onTogglePassword = null
+            )
+            if (confirmPasswordError.isNotEmpty()) ErrorText(confirmPasswordError)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ===== NEW FIELDS =====
+            DropdownField("Life Focus", lifeFocus, focusExpanded, { focusExpanded = true }, { focusExpanded = false },
+                listOf("Career", "Love", "Finance", "Growth")) { lifeFocus = it }
+            if (focusError.isNotEmpty()) ErrorText(focusError)
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            DropdownField("Current State", state, stateExpanded, { stateExpanded = true }, { stateExpanded = false },
+                listOf("Confident", "Lost", "Stressed", "Motivated")) { state = it }
+            if (stateError.isNotEmpty()) ErrorText(stateError)
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            DropdownField("Intent", intent, intentExpanded, { intentExpanded = true }, { intentExpanded = false },
+                listOf("Clarity", "Direction", "Opportunities", "Balance")) { intent = it }
+            if (intentError.isNotEmpty()) ErrorText(intentError)
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            FuturisButton(
-                text = "Create account",
-                onClick = {
-                    focusManager.clearFocus()
+            // ===== SUBMIT =====
+            FuturisButton("Create account") {
 
-                    var isValid = true
+                android.util.Log.d("SIGNUP", "BUTTON CLICKED")
 
-                    if (!isLettersOnly(firstName)) {
-                        firstNameError = "Letters only"
-                        isValid = false
-                    }
+                focusManager.clearFocus()
+                var isValid = true
 
-                    if (!isLettersOnly(lastName)) {
-                        lastNameError = "Letters only"
-                        isValid = false
-                    }
+                if (!isLettersOnly(firstName)) { firstNameError = "Letters only"; isValid = false }
+                if (!isLettersOnly(lastName)) { lastNameError = "Letters only"; isValid = false }
 
-                    if (!isValidDate(dateOfBirth)) {
-                        dateError = "Use DD/MM/YYYY"
-                        isValid = false
-                    }
-
-                    if (gender != "Male" && gender != "Female") {
-                        genderError = "Choose Male or Female"
-                        isValid = false
-                    }
-
-                    if (username.isBlank()) {
-                        usernameError = "Username is required"
-                        isValid = false
-                    }
-
-                    if (!isValidEmail(email)) {
-                        emailError = "Invalid email format"
-                        isValid = false
-                    }
-
-                    if (password.length < 6) {
-                        passwordError = "Minimum 6 characters"
-                        isValid = false
-                    }
-
-                    if (confirmPassword != password) {
-                        confirmPasswordError = "Passwords do not match"
-                        isValid = false
-                    }
-
-                    if (isValid) {
-                        // TODO:
-                        // 1) send data to backend
-                        // 2) backend checks unique username
-                        // 3) backend checks unique email
-                        // 4) create account if everything is valid
-                    }
+                if (!isValidDate(dateOfBirth)) {
+                    dateError = "Invalid date"; isValid = false
+                } else if (!isAgeValid(dateOfBirth)) {
+                    dateError = "Must be 13+"; isValid = false
                 }
-            )
+
+                if (gender.isBlank()) { genderError = "Required"; isValid = false }
+                if (username.isBlank()) { usernameError = "Required"; isValid = false }
+                if (!isValidEmail(email)) { emailError = "Invalid email"; isValid = false }
+
+                if (!isStrongPassword(password)) {
+                    passwordError = "Min 6 chars + 1 number"; isValid = false
+                }
+
+                if (confirmPassword != password) {
+                    confirmPasswordError = "Passwords do not match"; isValid = false
+                }
+
+                if (lifeFocus.isBlank()) { focusError = "Required"; isValid = false }
+                if (state.isBlank()) { stateError = "Required"; isValid = false }
+                if (intent.isBlank()) { intentError = "Required"; isValid = false }
+
+                android.util.Log.d("SIGNUP", "BUTTON CLICKED")
+
+                if (isValid) {
+                    android.util.Log.d("SIGNUP", "VALIDATION PASSED → CALLING API")
+
+                    val request = RegisterRequest(
+                        firstName,
+                        lastName,
+                        dateOfBirth,
+                        gender,
+                        username,
+                        email,
+                        password,
+                        lifeFocus,
+                        state,
+                        intent
+                    )
+
+                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                        try {
+                            val response = RetrofitClient.api.registerUser(request)
+
+                            Handler(Looper.getMainLooper()).post {
+
+                                if (response.isSuccessful) {
+
+                                    android.util.Log.d("SIGNUP", "SUCCESS")
+
+                                    Toast.makeText(
+                                        context,
+                                        "Account created successfully. Please log in.",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+
+                                    onGoLogin() // 🔥 REDIRECT
+
+                                } else {
+
+                                    val errorMsg = response.errorBody()?.string()
+                                    android.util.Log.d("SIGNUP", "ERROR: $errorMsg")
+
+                                    Toast.makeText(
+                                        context,
+                                        "Signup failed. Please try again.",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            }
+
+                        } catch (e: Exception) {
+                            android.util.Log.d("SIGNUP", "EXCEPTION: ${e.message}")
+                        }
+                    }
+
+                } else {
+                    println("VALIDATION FAILED ❌")
+                }
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Row {
-                Text(
-                    text = "Already have an account? ",
-                    color = SoftText,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                Text(
-                    text = "Log in",
-                    color = LinkPurple,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    ) { onGoLogin() }
-                )
+                Text("Already have an account? ", color = SoftText)
+                Text("Log in", color = LinkPurple, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable { onGoLogin() })
             }
 
             Spacer(modifier = Modifier.height(30.dp))
@@ -353,36 +354,62 @@ fun SignupScreen(onGoLogin: () -> Unit) {
     }
 }
 
+// ===== DROPDOWN =====
+@Composable
+fun DropdownField(
+    placeholder: String,
+    value: String,
+    expanded: Boolean,
+    onExpand: () -> Unit,
+    onDismiss: () -> Unit,
+    options: List<String>,
+    onSelect: (String) -> Unit
+) {
+    Column {
+        Box {
+            FuturisField(value = value, onValueChange = {}, placeholder = placeholder)
+
+            Box(
+                modifier = Modifier.matchParentSize().clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ) { onExpand() }
+            )
+
+            DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
+                options.forEach {
+                    DropdownMenuItem(text = { Text(it) }, onClick = {
+                        onSelect(it)
+                        onDismiss()
+                    })
+                }
+            }
+        }
+    }
+}
+
+// ===== HELPERS =====
 @Composable
 fun ErrorText(message: String) {
-    Text(
-        text = message,
-        color = Color(0xFFFF6B6B),
-        fontSize = 12.sp,
-        modifier = Modifier.padding(start = 4.dp, top = 4.dp)
-    )
+    Text(message, color = Color.Red, fontSize = 12.sp)
 }
 
-fun isLettersOnly(text: String): Boolean {
-    return text.isNotBlank() && text.all { it.isLetter() || it.isWhitespace() }
-}
+fun isLettersOnly(text: String) =
+    text.isNotBlank() && text.all { it.isLetter() || it.isWhitespace() }
 
-fun isValidEmail(email: String): Boolean {
-    return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
-}
+fun isValidEmail(email: String) =
+    android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+
+fun isStrongPassword(password: String) =
+    password.length >= 6 && password.any { it.isDigit() }
 
 fun isValidDate(date: String): Boolean {
     val regex = Regex("""\d{2}/\d{2}/\d{4}""")
-    if (!regex.matches(date)) return false
+    return regex.matches(date)
+}
 
-    val parts = date.split("/")
-    val day = parts[0].toIntOrNull() ?: return false
-    val month = parts[1].toIntOrNull() ?: return false
-    val year = parts[2].toIntOrNull() ?: return false
-
-    if (month !in 1..12) return false
-    if (day !in 1..31) return false
-    if (year !in 1900..2100) return false
-
-    return true
+fun isAgeValid(date: String): Boolean {
+    val year = date.split("/").last().toIntOrNull() ?: return false
+    val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+    return currentYear - year >= 13
 }
