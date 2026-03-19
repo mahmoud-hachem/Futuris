@@ -5,33 +5,20 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -41,6 +28,16 @@ import androidx.compose.ui.unit.sp
 import com.example.futuris.R
 import com.example.futuris.screens.home.BottomTabItem
 import com.example.futuris.screens.home.GlassBottomBar
+import okhttp3.*
+import org.json.JSONObject
+import java.io.IOException
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
+
+data class ChatMessage(
+    val text: String,
+    val isUser: Boolean
+)
 
 @Composable
 fun ChatScreen(
@@ -49,7 +46,12 @@ fun ChatScreen(
     onTabSelected: (String) -> Unit
 ) {
     val safeFirstName = firstName.trim().ifBlank { "User" }
+
     var message by remember { mutableStateOf("") }
+
+    val messages = remember { mutableStateListOf<ChatMessage>() }
+
+    val client = OkHttpClient()
 
     val tabs = remember {
         listOf(
@@ -62,15 +64,13 @@ fun ChatScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
 
-        // Background image
         Image(
             painter = painterResource(id = R.drawable.home_bg),
-            contentDescription = "Chat background",
+            contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
 
-        // Dark overlay
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -91,6 +91,7 @@ fun ChatScreen(
                 .statusBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 18.dp)
         ) {
+
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
@@ -108,48 +109,63 @@ fun ChatScreen(
                 fontSize = 16.sp
             )
 
-            Spacer(modifier = Modifier.height(34.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                reverseLayout = true
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.chat_robot),
-                    contentDescription = "Chat robot",
-                    modifier = Modifier.size(130.dp),
-                    contentScale = ContentScale.Fit
-                )
+                items(messages.reversed()) { msg ->
+                    ChatBubble(msg)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
             }
-
-            Spacer(modifier = Modifier.height(34.dp))
-
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(Color(0xAA3A1560))
-                    .border(
-                        width = 1.dp,
-                        color = Color(0x40FFFFFF),
-                        shape = RoundedCornerShape(20.dp)
-                    )
-                    .padding(horizontal = 16.dp, vertical = 14.dp)
-            ) {
-                Text(
-                    text = "Hello $safeFirstName! Ask me anything\nabout your future.",
-                    color = Color.White,
-                    fontSize = 17.sp,
-                    lineHeight = 22.sp
-                )
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
 
             ChatInputBar(
                 value = message,
                 onValueChange = { message = it },
                 onSendClick = {
-                    // frontend only for now
+                    if (message.isNotBlank()) {
+
+                        val userMessage = message
+
+                        // add user message
+                        messages.add(ChatMessage(userMessage, true))
+
+                        message = ""
+
+                        // 🔥 REAL BACKEND CALL (REPLACED FAKE AI)
+
+                        val json = JSONObject()
+                        json.put("message", userMessage)
+
+                        val body = json.toString()
+                            .toRequestBody("application/json".toMediaTypeOrNull())
+
+                        val request = Request.Builder()
+                            .url("https://futuris-backend.onrender.com/chat")
+                            .post(body)
+                            .build()
+
+                        client.newCall(request).enqueue(object : Callback {
+                            override fun onFailure(call: Call, e: IOException) {
+                                messages.add(ChatMessage("Error connecting to server", false))
+                            }
+
+                            override fun onResponse(call: Call, response: Response) {
+                                val res = response.body?.string()
+                                val reply = try {
+                                    JSONObject(res).getString("reply")
+                                } catch (e: Exception) {
+                                    "Server error: check API or quota"
+                                }
+
+                                androidx.compose.runtime.snapshots.Snapshot.withMutableSnapshot {
+                                    messages.add(ChatMessage(reply, false))
+                                }
+                            }
+                        })
+                    }
                 }
             )
 
@@ -159,6 +175,32 @@ fun ChatScreen(
                 selectedTab = currentTab,
                 tabs = tabs,
                 onTabSelected = onTabSelected
+            )
+        }
+    }
+}
+
+@Composable
+fun ChatBubble(message: ChatMessage) {
+
+    val isUser = message.isUser
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
+    ) {
+        Box(
+            modifier = Modifier
+                .background(
+                    if (isUser) Color(0xFF9C27B0) else Color(0xFF3A2A5F),
+                    RoundedCornerShape(16.dp)
+                )
+                .padding(12.dp)
+        ) {
+            Text(
+                text = message.text,
+                color = Color.White,
+                fontSize = 14.sp
             )
         }
     }
@@ -226,7 +268,8 @@ fun ChatInputBar(
                             Color(0xFF8A4DFF)
                         )
                     )
-                ),
+                )
+                .clickable { onSendClick() },
             contentAlignment = Alignment.Center
         ) {
             Text(
