@@ -12,6 +12,7 @@ import com.example.futuris.screens.auth.LoginScreen
 import com.example.futuris.screens.auth.ResetPasswordScreen
 import com.example.futuris.screens.auth.SignupScreen
 import com.example.futuris.screens.auth.SplashScreen
+import com.example.futuris.screens.categories.LoveScreen
 import com.example.futuris.screens.chat.ChatScreen
 import com.example.futuris.screens.home.HomeScreen
 import com.example.futuris.screens.profile.ProfileScreen
@@ -24,6 +25,7 @@ enum class Screen {
     EmailVerification,
     CreateNewPassword,
     Home,
+    Love,
     Chat,
     Alerts,
     Profile
@@ -31,7 +33,7 @@ enum class Screen {
 
 @Composable
 fun FuturisApp() {
-    var currentScreen by remember { mutableStateOf(Screen.Signup) }
+    var currentScreen by remember { mutableStateOf(Screen.Home) }
 
     // temporary frontend values
     var userFirstName by remember { mutableStateOf("Alex") }
@@ -46,8 +48,9 @@ fun FuturisApp() {
         Screen.Login -> LoginScreen(
             onGoSignup = { currentScreen = Screen.Signup },
             onForgotPassword = { currentScreen = Screen.ResetPassword },
-            onLoginSuccess = { currentScreen = Screen.Home } // 🔥 THIS LINE
+            onLoginSuccess = { currentScreen = Screen.Home }
         )
+
         Screen.Signup -> SignupScreen(
             onGoLogin = { currentScreen = Screen.Login }
         )
@@ -69,7 +72,11 @@ fun FuturisApp() {
         Screen.Home -> HomeScreen(
             firstName = userFirstName,
             currentTab = "home",
-            onCategoryClick = { },
+            onCategoryClick = { category ->
+                when (category) {
+                    "love" -> currentScreen = Screen.Love
+                }
+            },
             onTabSelected = { tab ->
                 when (tab) {
                     "home" -> currentScreen = Screen.Home
@@ -77,6 +84,22 @@ fun FuturisApp() {
                     "alerts" -> currentScreen = Screen.Alerts
                     "profile" -> currentScreen = Screen.Profile
                 }
+            }
+        )
+
+        Screen.Love -> LoveScreen(
+            currentTab = "home",
+            onBackClick = { currentScreen = Screen.Home },
+            onTabSelected = { tab ->
+                when (tab) {
+                    "home" -> currentScreen = Screen.Home
+                    "chat" -> currentScreen = Screen.Chat
+                    "alerts" -> currentScreen = Screen.Alerts
+                    "profile" -> currentScreen = Screen.Profile
+                }
+            },
+            onQuestionClick = {
+                currentScreen = Screen.Chat
             }
         )
 
