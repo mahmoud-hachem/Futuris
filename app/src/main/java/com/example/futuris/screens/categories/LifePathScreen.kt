@@ -5,7 +5,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -42,32 +42,21 @@ import com.example.futuris.screens.home.BottomTabItem
 import com.example.futuris.screens.home.GlassBottomBar
 
 @Composable
-fun LoveScreen(
+fun LifePathScreen(
     currentTab: String,
     onBackClick: () -> Unit,
     onTabSelected: (String) -> Unit,
     onQuestionClick: (String) -> Unit = {}
 ) {
-    val tabs = remember {
-        listOf(
-            BottomTabItem("Home", "home", R.drawable.nav_home),
-            BottomTabItem("Chat", "chat", R.drawable.nav_chat),
-            BottomTabItem("Alerts", "alerts", R.drawable.nav_alerts),
-            BottomTabItem("Profile", "profile", R.drawable.nav_profile)
-        )
-    }
-
     val questions = remember {
         listOf(
-            "Will I meet someone special soon?",
-            "Is my current relationship stable?",
-            "Should I focus on self-love right now?"
+            "What is my true life purpose?",
+            "Am I following the right path in life?",
+            "What opportunities will shape my future?"
         )
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-
-        // Same purple galaxy background as home
         Image(
             painter = painterResource(id = R.drawable.home_bg),
             contentDescription = null,
@@ -87,10 +76,8 @@ fun LoveScreen(
                     .padding(horizontal = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
-
                 item {
-
-                    // ── Back button ──
+                    // Back button
                     Box(
                         modifier = Modifier
                             .size(38.dp)
@@ -100,18 +87,14 @@ fun LoveScreen(
                             .clickable { onBackClick() },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = "←",
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                        Text(text = "←", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
                     }
 
                     Spacer(modifier = Modifier.height(6.dp))
 
+                    // Title
                     Text(
-                        text = "Love & Relationships",
+                        text = "Life Path",
                         color = Color.White,
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
@@ -119,71 +102,50 @@ fun LoveScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    // ── Hero heart — fixed size, negative vertical offset to kill PNG padding ──
+                    // Hero image
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(160.dp),
+                        modifier = Modifier.fillMaxWidth().height(160.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Image(
-                            painter = painterResource(id = R.drawable.love),
-                            contentDescription = "Love",
+                            painter = painterResource(id = R.drawable.lifepath),
+                            contentDescription = "Life Path",
                             contentScale = ContentScale.Fit,
-                            modifier = Modifier.size(220.dp)
-                                .offset(y = (-10).dp)
+                            modifier = Modifier.size(220.dp).offset(y = (-10).dp)
                         )
                     }
 
-                    // ── Prediction card ──
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // Prediction card
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(22.dp))
                             .background(
                                 Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color(0x4AFFFFFF),
-                                        Color(0x2AFFFFFF)
-                                    )
+                                    colors = listOf(Color(0x4AFFFFFF), Color(0x2AFFFFFF))
                                 )
                             )
-                            .border(
-                                BorderStroke(1.dp, Color(0x88FFFFFF)),
-                                RoundedCornerShape(22.dp)
-                            )
+                            .border(BorderStroke(1.dp, Color(0x88FFFFFF)), RoundedCornerShape(22.dp))
                             .padding(horizontal = 18.dp, vertical = 18.dp)
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-
-                            // Icon + title in same row
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                                 Image(
-                                    painter = painterResource(id = R.drawable.love),
+                                    painter = painterResource(id = R.drawable.lifepath),
                                     contentDescription = null,
-                                    modifier = Modifier
-                                        .size(46.dp)
-                                        .clip(CircleShape),
+                                    modifier = Modifier.size(46.dp).clip(CircleShape),
                                     contentScale = ContentScale.Crop
                                 )
-
                                 Spacer(modifier = Modifier.width(12.dp))
-
-                                Text(
-                                    text = "Your Love Prediction",
-                                    color = Color.White,
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                                Text(text = "Your Life Path Prediction", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                             }
 
                             Spacer(modifier = Modifier.height(14.dp))
 
                             Text(
-                                text = "A new emotional connection may enter your life soon.",
+                                text = "Your life path is shaped by the choices and experiences you encounter.",
                                 color = Color(0xFFF0E6FF),
                                 fontSize = 14.sp,
                                 lineHeight = 22.sp,
@@ -194,7 +156,7 @@ fun LoveScreen(
                             Spacer(modifier = Modifier.height(10.dp))
 
                             Text(
-                                text = "Stay open to meaningful conversations and trust your intuition.",
+                                text = "Pay attention to the opportunities around you and trust that each step is guiding you toward your true purpose.",
                                 color = Color(0xFFE8D8FF),
                                 fontSize = 14.sp,
                                 lineHeight = 22.sp,
@@ -206,44 +168,24 @@ fun LoveScreen(
 
                     Spacer(modifier = Modifier.height(22.dp))
 
-                    // ── Section label ──
-                    Text(
-                        text = "Popular Questions",
-                        color = Color.White,
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    Text(text = "Popular Questions", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
 
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                // ── Question pills ──
                 items(questions) { question ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(50.dp))
                             .background(Color(0x22FFFFFF))
-                            .border(
-                                BorderStroke(1.dp, Color(0x66C084FC)),
-                                RoundedCornerShape(50.dp)
-                            )
+                            .border(BorderStroke(1.dp, Color(0x66C084FC)), RoundedCornerShape(50.dp))
                             .clickable { onQuestionClick(question) }
                             .padding(horizontal = 20.dp, vertical = 16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = question,
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Text(
-                            text = "→",
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Text(text = question, color = Color.White, fontSize = 14.sp, modifier = Modifier.weight(1f))
+                        Text(text = "→", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     }
                     Spacer(modifier = Modifier.height(10.dp))
                 }
@@ -251,7 +193,6 @@ fun LoveScreen(
                 item { Spacer(modifier = Modifier.height(4.dp)) }
             }
 
-            // ── Bottom bar ──
             Box(modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)) {
                 GlassBottomBar(
                     selectedTab = currentTab,

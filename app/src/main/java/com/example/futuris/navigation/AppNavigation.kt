@@ -13,6 +13,11 @@ import com.example.futuris.screens.auth.ResetPasswordScreen
 import com.example.futuris.screens.auth.SignupScreen
 import com.example.futuris.screens.auth.SplashScreen
 import com.example.futuris.screens.categories.LoveScreen
+import com.example.futuris.screens.categories.CareerScreen
+import com.example.futuris.screens.categories.FinanceScreen
+import com.example.futuris.screens.categories.MoodScreen
+import com.example.futuris.screens.categories.DecisionsScreen
+import com.example.futuris.screens.categories.LifePathScreen
 import com.example.futuris.screens.chat.ChatScreen
 import com.example.futuris.screens.home.HomeScreen
 import com.example.futuris.screens.profile.ProfileScreen
@@ -26,6 +31,11 @@ enum class Screen {
     CreateNewPassword,
     Home,
     Love,
+    Career,
+    Finance,
+    Mood,
+    Decisions,
+    LifePath,
     Chat,
     Alerts,
     Profile
@@ -33,7 +43,7 @@ enum class Screen {
 
 @Composable
 fun FuturisApp() {
-    var currentScreen by remember { mutableStateOf(Screen.Signup) }
+    var currentScreen by remember { mutableStateOf(Screen.Home) }
 
     // temporary frontend values
     var userFirstName by remember { mutableStateOf("Alex") }
@@ -74,9 +84,79 @@ fun FuturisApp() {
             currentTab = "home",
             onCategoryClick = { category ->
                 when (category) {
-                    "love" -> currentScreen = Screen.Love
+                    "love"      -> currentScreen = Screen.Love
+                    "career"    -> currentScreen = Screen.Career
+                    "finance"   -> currentScreen = Screen.Finance
+                    "mood"      -> currentScreen = Screen.Mood
+                    "decisions" -> currentScreen = Screen.Decisions
+                    "lifepath"  -> currentScreen = Screen.LifePath
                 }
             },
+            onTabSelected = { tab ->
+                when (tab) {
+                    "home" -> currentScreen = Screen.Home
+                    "chat" -> currentScreen = Screen.Chat
+                    "alerts" -> currentScreen = Screen.Alerts
+                    "profile" -> currentScreen = Screen.Profile
+                }
+            }
+        )
+
+        Screen.Career -> CareerScreen(
+            currentTab = "home",
+            onBackClick = { currentScreen = Screen.Home },
+            onTabSelected = { tab ->
+                when (tab) {
+                    "home" -> currentScreen = Screen.Home
+                    "chat" -> currentScreen = Screen.Chat
+                    "alerts" -> currentScreen = Screen.Alerts
+                    "profile" -> currentScreen = Screen.Profile
+                }
+            }
+        )
+
+        Screen.Finance -> FinanceScreen(
+            currentTab = "home",
+            onBackClick = { currentScreen = Screen.Home },
+            onTabSelected = { tab ->
+                when (tab) {
+                    "home" -> currentScreen = Screen.Home
+                    "chat" -> currentScreen = Screen.Chat
+                    "alerts" -> currentScreen = Screen.Alerts
+                    "profile" -> currentScreen = Screen.Profile
+                }
+            }
+        )
+
+        Screen.Mood -> MoodScreen(
+            currentTab = "home",
+            onBackClick = { currentScreen = Screen.Home },
+            onTabSelected = { tab ->
+                when (tab) {
+                    "home" -> currentScreen = Screen.Home
+                    "chat" -> currentScreen = Screen.Chat
+                    "alerts" -> currentScreen = Screen.Alerts
+                    "profile" -> currentScreen = Screen.Profile
+                }
+            }
+        )
+
+        Screen.Decisions -> DecisionsScreen(
+            currentTab = "home",
+            onBackClick = { currentScreen = Screen.Home },
+            onTabSelected = { tab ->
+                when (tab) {
+                    "home" -> currentScreen = Screen.Home
+                    "chat" -> currentScreen = Screen.Chat
+                    "alerts" -> currentScreen = Screen.Alerts
+                    "profile" -> currentScreen = Screen.Profile
+                }
+            }
+        )
+
+        Screen.LifePath -> LifePathScreen(
+            currentTab = "home",
+            onBackClick = { currentScreen = Screen.Home },
             onTabSelected = { tab ->
                 when (tab) {
                     "home" -> currentScreen = Screen.Home

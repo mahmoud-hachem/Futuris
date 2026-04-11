@@ -28,6 +28,9 @@ import android.widget.Toast
 import android.os.Handler
 import android.os.Looper
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
 
 @Composable
 
@@ -77,27 +80,28 @@ fun SignupScreen(onGoLogin: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
+                .windowInsetsPadding(WindowInsets.statusBars)
                 .padding(horizontal = 22.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            Spacer(modifier = Modifier.height(34.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Image(
                 painter = painterResource(id = R.drawable.futuris_logo),
                 contentDescription = "Logo",
-                modifier = Modifier.size(95.dp)
+                modifier = Modifier.size(72.dp)
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text("Create account", color = TitleWhite, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Text("Sign up to get started", color = SoftText, fontSize = 13.sp)
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            Text("Create account", color = TitleWhite, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Text("Sign up to get started", color = SoftText, fontSize = 14.sp)
-
-            Spacer(modifier = Modifier.height(24.dp))
-
             // ===== NAME =====
-            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
 
                 Column(modifier = Modifier.weight(1f)) {
                     FuturisField(
@@ -126,10 +130,10 @@ fun SignupScreen(onGoLogin: () -> Unit) {
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // ===== DOB + GENDER =====
-            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
 
                 Column(modifier = Modifier.weight(1f)) {
                     FuturisField(
@@ -173,7 +177,7 @@ fun SignupScreen(onGoLogin: () -> Unit) {
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // ===== USERNAME =====
             FuturisField(
@@ -182,11 +186,12 @@ fun SignupScreen(onGoLogin: () -> Unit) {
                     username = it
                     usernameError = ""
                 },
-                placeholder = "Username"
+                placeholder = "Username",
+                height = 48
             )
             if (usernameError.isNotEmpty()) ErrorText(usernameError)
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // ===== EMAIL =====
             FuturisField(
@@ -195,11 +200,12 @@ fun SignupScreen(onGoLogin: () -> Unit) {
                     email = it
                     emailError = ""
                 },
-                placeholder = "Email address"
+                placeholder = "Email address",
+                height = 48
             )
             if (emailError.isNotEmpty()) ErrorText(emailError)
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // ===== PASSWORD =====
             FuturisPasswordField(
@@ -214,7 +220,7 @@ fun SignupScreen(onGoLogin: () -> Unit) {
             )
             if (passwordError.isNotEmpty()) ErrorText(passwordError)
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             FuturisPasswordField(
                 value = confirmPassword,
@@ -228,26 +234,26 @@ fun SignupScreen(onGoLogin: () -> Unit) {
             )
             if (confirmPasswordError.isNotEmpty()) ErrorText(confirmPasswordError)
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             // ===== NEW FIELDS =====
             DropdownField("Life Focus", lifeFocus, focusExpanded, { focusExpanded = true }, { focusExpanded = false },
                 listOf("Career", "Love", "Finance", "Growth")) { lifeFocus = it }
             if (focusError.isNotEmpty()) ErrorText(focusError)
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             DropdownField("Current State", state, stateExpanded, { stateExpanded = true }, { stateExpanded = false },
                 listOf("Confident", "Lost", "Stressed", "Motivated")) { state = it }
             if (stateError.isNotEmpty()) ErrorText(stateError)
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             DropdownField("Intent", intent, intentExpanded, { intentExpanded = true }, { intentExpanded = false },
                 listOf("Clarity", "Direction", "Opportunities", "Balance")) { intent = it }
             if (intentError.isNotEmpty()) ErrorText(intentError)
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // ===== SUBMIT =====
             FuturisButton("Create account") {
@@ -341,15 +347,16 @@ fun SignupScreen(onGoLogin: () -> Unit) {
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             Row {
-                Text("Already have an account? ", color = SoftText)
+                Text("Already have an account? ", color = SoftText, fontSize = 13.sp)
                 Text("Log in", color = LinkPurple, fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
                     modifier = Modifier.clickable { onGoLogin() })
             }
 
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -367,7 +374,7 @@ fun DropdownField(
 ) {
     Column {
         Box {
-            FuturisField(value = value, onValueChange = {}, placeholder = placeholder)
+            FuturisField(value = value, onValueChange = {}, placeholder = placeholder, height = 48)
 
             Box(
                 modifier = Modifier.matchParentSize().clickable(

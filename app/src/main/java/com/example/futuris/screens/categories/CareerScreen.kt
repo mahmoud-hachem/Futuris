@@ -5,7 +5,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -42,32 +42,23 @@ import com.example.futuris.screens.home.BottomTabItem
 import com.example.futuris.screens.home.GlassBottomBar
 
 @Composable
-fun LoveScreen(
+fun CareerScreen(
     currentTab: String,
     onBackClick: () -> Unit,
     onTabSelected: (String) -> Unit,
     onQuestionClick: (String) -> Unit = {}
 ) {
-    val tabs = remember {
-        listOf(
-            BottomTabItem("Home", "home", R.drawable.nav_home),
-            BottomTabItem("Chat", "chat", R.drawable.nav_chat),
-            BottomTabItem("Alerts", "alerts", R.drawable.nav_alerts),
-            BottomTabItem("Profile", "profile", R.drawable.nav_profile)
-        )
-    }
-
     val questions = remember {
         listOf(
-            "Will I meet someone special soon?",
-            "Is my current relationship stable?",
-            "Should I focus on self-love right now?"
+            "Will I succeed in my career path?",
+            "What field suits my future best?",
+            "Should I change my studies ?"
         )
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
 
-        // Same purple galaxy background as home
+        // Same purple galaxy background
         Image(
             painter = painterResource(id = R.drawable.home_bg),
             contentDescription = null,
@@ -87,7 +78,6 @@ fun LoveScreen(
                     .padding(horizontal = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
-
                 item {
 
                     // ── Back button ──
@@ -110,8 +100,9 @@ fun LoveScreen(
 
                     Spacer(modifier = Modifier.height(6.dp))
 
+                    // ── Title ──
                     Text(
-                        text = "Love & Relationships",
+                        text = "Career & Studies",
                         color = Color.White,
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
@@ -119,7 +110,7 @@ fun LoveScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    // ── Hero heart — fixed size, negative vertical offset to kill PNG padding ──
+                    // ── Hero briefcase image ──
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -127,13 +118,16 @@ fun LoveScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Image(
-                            painter = painterResource(id = R.drawable.love),
-                            contentDescription = "Love",
+                            painter = painterResource(id = R.drawable.card_career),
+                            contentDescription = "Career",
                             contentScale = ContentScale.Fit,
-                            modifier = Modifier.size(220.dp)
+                            modifier = Modifier
+                                .size(220.dp)
                                 .offset(y = (-10).dp)
                         )
                     }
+
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     // ── Prediction card ──
                     Box(
@@ -156,24 +150,21 @@ fun LoveScreen(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
 
-                            // Icon + title in same row
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Image(
-                                    painter = painterResource(id = R.drawable.love),
+                                    painter = painterResource(id = R.drawable.card_career),
                                     contentDescription = null,
                                     modifier = Modifier
                                         .size(46.dp)
                                         .clip(CircleShape),
                                     contentScale = ContentScale.Crop
                                 )
-
                                 Spacer(modifier = Modifier.width(12.dp))
-
                                 Text(
-                                    text = "Your Love Prediction",
+                                    text = "Your Career Prediction",
                                     color = Color.White,
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold
@@ -183,7 +174,7 @@ fun LoveScreen(
                             Spacer(modifier = Modifier.height(14.dp))
 
                             Text(
-                                text = "A new emotional connection may enter your life soon.",
+                                text = "A new opportunity in your studies or career may appear soon.",
                                 color = Color(0xFFF0E6FF),
                                 fontSize = 14.sp,
                                 lineHeight = 22.sp,
@@ -194,7 +185,7 @@ fun LoveScreen(
                             Spacer(modifier = Modifier.height(10.dp))
 
                             Text(
-                                text = "Stay open to meaningful conversations and trust your intuition.",
+                                text = "Stay focused on your goals and trust your skills to guide you forward.",
                                 color = Color(0xFFE8D8FF),
                                 fontSize = 14.sp,
                                 lineHeight = 22.sp,
@@ -206,7 +197,6 @@ fun LoveScreen(
 
                     Spacer(modifier = Modifier.height(22.dp))
 
-                    // ── Section label ──
                     Text(
                         text = "Popular Questions",
                         color = Color.White,
@@ -217,7 +207,6 @@ fun LoveScreen(
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                // ── Question pills ──
                 items(questions) { question ->
                     Row(
                         modifier = Modifier
@@ -251,7 +240,6 @@ fun LoveScreen(
                 item { Spacer(modifier = Modifier.height(4.dp)) }
             }
 
-            // ── Bottom bar ──
             Box(modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)) {
                 GlassBottomBar(
                     selectedTab = currentTab,

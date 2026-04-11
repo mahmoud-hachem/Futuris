@@ -88,6 +88,8 @@ fun HomeScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+
+        // Background
         Image(
             painter = painterResource(id = R.drawable.home_bg),
             contentDescription = "Background",
@@ -95,90 +97,63 @@ fun HomeScreen(
             modifier = Modifier.fillMaxSize()
         )
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0x1A000000),
-                            Color(0x12000000),
-                            Color(0x33000000)
-                        )
-                    )
-                )
-        )
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
                 .navigationBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 10.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
+            // ── Greeting ──
             val greeting = when (java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)) {
                 in 5..11 -> "Good morning"
                 in 12..17 -> "Good afternoon"
                 else -> "Good evening"
             }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
             Text(
                 text = "$greeting, $safeFirstName 🔮",
                 color = Color.White,
-                fontSize = 23.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(start = 18.dp)
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
-            val message = listOf(
-                "Let’s explore your path today",
-                "Your journey starts here",
-                "Choose where to begin",
-                "Discover what awaits you"
-            ).random()
+            Spacer(modifier = Modifier.height(2.dp))
+
             Text(
-                text = message,
+                text = "Discover what awaits you",
                 color = Color(0xFFE8D8F8),
-                fontSize = 14.sp,
-                modifier = Modifier.padding(start = 18.dp)
+                fontSize = 14.sp
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
+            // ── Category grid + Destiny Quiz ──
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(bottom = 16.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(bottom = 8.dp)
             ) {
                 items(categories) { category ->
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CategoryCard(
-                            title = category.title,
-                            imageRes = category.imageRes,
-                            onClick = { onCategoryClick(category.key) }
-                        )
-                    }
+                    CategoryCard(
+                        title = category.title,
+                        imageRes = category.imageRes,
+                        onClick = { onCategoryClick(category.key) }
+                    )
                 }
 
                 item(span = { GridItemSpan(2) }) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 4.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        DestinyQuizCard(
-                            onClick = onDestinyQuizClick
-                        )
-                    }
+                    DestinyQuizCard(onClick = onDestinyQuizClick)
                 }
             }
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // ── Bottom bar ──
             GlassBottomBar(
                 selectedTab = currentTab,
                 tabs = tabs,
@@ -201,15 +176,10 @@ fun CategoryCard(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(125.dp)
-                .clip(RoundedCornerShape(20.dp))
+                .height(130.dp)
+                .clip(RoundedCornerShape(18.dp))
                 .clickable { onClick() }
-                .background(Color(0x22000000))
-                .border(
-                    width = 1.dp,
-                    color = Color(0x30FFFFFF),
-                    shape = RoundedCornerShape(20.dp)
-                )
+                .border(width = 1.dp, color = Color(0x44FFFFFF), shape = RoundedCornerShape(18.dp))
         ) {
             Image(
                 painter = painterResource(id = imageRes),
@@ -217,30 +187,26 @@ fun CategoryCard(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
-
+            // subtle bottom fade so text is readable
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color(0x08000000),
-                                Color(0x22000000)
-                            )
+                            colors = listOf(Color.Transparent, Color(0x33000000))
                         )
                     )
             )
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(6.dp))
 
         Text(
             text = title,
-            color = Color(0xFFF7EEFF),
-            fontSize = 14.sp,
+            color = Color.White,
+            fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
-            lineHeight = 18.sp,
+            lineHeight = 17.sp,
             textAlign = TextAlign.Center,
             maxLines = 2
         )
@@ -248,65 +214,51 @@ fun CategoryCard(
 }
 
 @Composable
-fun DestinyQuizCard(
-    onClick: () -> Unit
-) {
+fun DestinyQuizCard(onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(165.dp)
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(22.dp))
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0x662E0C52),
-                        Color(0x88310C56)
-                    )
+                    colors = listOf(Color(0x772E0C52), Color(0x99310C56))
                 )
             )
-            .border(
-                BorderStroke(1.dp, Color(0x66C68CFF)),
-                shape = RoundedCornerShape(24.dp)
-            )
+            .border(BorderStroke(1.dp, Color(0x88C68CFF)), shape = RoundedCornerShape(22.dp))
             .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Image(
                     painter = painterResource(id = R.drawable.destiny),
                     contentDescription = "Destiny Quiz",
                     modifier = Modifier
-                        .size(95.dp)
-                        .clip(RoundedCornerShape(50.dp)),
+                        .size(72.dp)
+                        .clip(CircleShape),
                     contentScale = ContentScale.Crop
                 )
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(14.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "Destiny Quiz",
                         color = Color.White,
                         fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Bold
                     )
-
                     Spacer(modifier = Modifier.height(4.dp))
-
                     Text(
                         text = "Let Futuris guide your future\nthrough questions",
                         color = Color(0xFFE6D7F6),
                         fontSize = 13.sp,
-                        lineHeight = 17.sp
+                        lineHeight = 18.sp
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.height(14.dp))
 
             Button(
                 onClick = onClick,
@@ -317,7 +269,7 @@ fun DestinyQuizCard(
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(44.dp)
+                    .height(46.dp)
             ) {
                 Text(
                     text = "Start Prediction",
@@ -338,20 +290,13 @@ fun GlassBottomBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .navigationBarsPadding()
             .clip(RoundedCornerShape(24.dp))
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0x663B0B57),
-                        Color(0x9920032E)
-                    )
+                    colors = listOf(Color(0x663B0B57), Color(0x9920032E))
                 )
             )
-            .border(
-                BorderStroke(1.dp, Color(0x55C68CFF)),
-                shape = RoundedCornerShape(24.dp)
-            )
+            .border(BorderStroke(1.dp, Color(0x55C68CFF)), shape = RoundedCornerShape(24.dp))
             .padding(horizontal = 8.dp, vertical = 8.dp)
     ) {
         Row(
@@ -386,33 +331,27 @@ fun GlassBottomBarItem(
         modifier = Modifier
             .clip(RoundedCornerShape(18.dp))
             .clickable { onClick() }
-            .padding(horizontal = 8.dp, vertical = 3.dp)
+            .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
         Box(contentAlignment = Alignment.Center) {
             if (selected) {
                 Box(
                     modifier = Modifier
-                        .size(30.dp)
+                        .size(32.dp)
                         .clip(CircleShape)
                         .background(
                             Brush.radialGradient(
-                                colors = listOf(
-                                    Color(0x55F1A8FF),
-                                    Color.Transparent
-                                )
+                                colors = listOf(Color(0x66F1A8FF), Color.Transparent)
                             )
                         )
                 )
             }
-
             Image(
                 painter = painterResource(id = iconRes),
                 contentDescription = label,
                 modifier = Modifier.size(22.dp),
                 contentScale = ContentScale.Fit,
-                colorFilter = ColorFilter.tint(
-                    if (selected) activeColor else inactiveColor
-                )
+                colorFilter = ColorFilter.tint(if (selected) activeColor else inactiveColor)
             )
         }
 

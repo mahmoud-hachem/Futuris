@@ -18,6 +18,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -51,6 +53,7 @@ fun FuturisPasswordField(
                     colors = listOf(CardTop, CardBottom)
                 )
             )
+            .pointerHoverIcon(PointerIcon.Text)
             .padding(horizontal = 16.dp),
         contentAlignment = Alignment.CenterStart
     ) {
@@ -84,6 +87,7 @@ fun FuturisPasswordField(
                 fontSize = 14.sp,
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
+                    .pointerHoverIcon(PointerIcon.Hand)
                     .clickable(
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() }

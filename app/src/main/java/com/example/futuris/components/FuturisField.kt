@@ -15,6 +15,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -42,6 +44,7 @@ fun FuturisField(
                     colors = listOf(CardTop, CardBottom)
                 )
             )
+            .pointerHoverIcon(PointerIcon.Text)
             .padding(horizontal = 16.dp),
         contentAlignment = Alignment.CenterStart
     ) {
