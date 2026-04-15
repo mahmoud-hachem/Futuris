@@ -21,6 +21,12 @@ data class RegisterResponse(
 
 data class UserData(
     val username: String,
+    val firstName: String? = null,
+    val lastName: String? = null,
+    val email: String? = null,
+    val dateOfBirth: String? = null,
+    val gender: String? = null,
+    val phone: String? = null,
     val insights: List<String> = emptyList()
 )
 
@@ -34,6 +40,14 @@ data class LoginResponse(
     val user: UserData? = null
 )
 
+data class ForgotPasswordRequest(
+    val email: String
+)
+
+data class ForgotPasswordResponse(
+    val message: String
+)
+
 interface ApiService {
     @POST("api/auth/login")
     suspend fun loginUser(
@@ -44,4 +58,9 @@ interface ApiService {
     suspend fun registerUser(
         @Body request: RegisterRequest
     ): Response<RegisterResponse>
+
+    @POST("api/auth/forgot-password")
+    suspend fun forgotPassword(
+        @Body request: ForgotPasswordRequest
+    ): Response<ForgotPasswordResponse>
 }
