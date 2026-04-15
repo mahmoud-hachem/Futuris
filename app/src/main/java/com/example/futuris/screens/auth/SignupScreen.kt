@@ -38,7 +38,6 @@ fun SignupScreen(onGoLogin: () -> Unit) {
     val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
 
-    // ===== USER DATA =====
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
     var dateOfBirth by remember { mutableStateOf("") }
@@ -49,10 +48,8 @@ fun SignupScreen(onGoLogin: () -> Unit) {
     var confirmPassword by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
 
-    // ===== DROPDOWNS =====
     var genderExpanded by remember { mutableStateOf(false) }
 
-    // ===== ERRORS =====
     var firstNameError by remember { mutableStateOf("") }
     var lastNameError by remember { mutableStateOf("") }
     var dateError by remember { mutableStateOf("") }
@@ -95,7 +92,6 @@ fun SignupScreen(onGoLogin: () -> Unit) {
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // ===== NAME =====
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(modifier = Modifier.weight(1f)) {
                     FuturisField(
@@ -126,7 +122,6 @@ fun SignupScreen(onGoLogin: () -> Unit) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ===== DOB + GENDER =====
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(modifier = Modifier.weight(1f)) {
                     FuturisField(
@@ -181,7 +176,6 @@ fun SignupScreen(onGoLogin: () -> Unit) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ===== USERNAME =====
             FuturisField(
                 value = username,
                 onValueChange = {
@@ -195,7 +189,6 @@ fun SignupScreen(onGoLogin: () -> Unit) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ===== EMAIL =====
             FuturisField(
                 value = email,
                 onValueChange = {
@@ -209,7 +202,6 @@ fun SignupScreen(onGoLogin: () -> Unit) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ===== PASSWORD =====
             FuturisPasswordField(
                 value = password,
                 onValueChange = {
@@ -238,7 +230,6 @@ fun SignupScreen(onGoLogin: () -> Unit) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // ===== SUBMIT =====
             FuturisButton("Create account") {
                 focusManager.clearFocus()
                 var isValid = true
@@ -316,7 +307,7 @@ fun SignupScreen(onGoLogin: () -> Unit) {
 
                                     Toast.makeText(
                                         context,
-                                        "Signup failed. Please try again.",
+                                        errorMsg ?: "Signup failed. Please try again.",
                                         Toast.LENGTH_LONG
                                     ).show()
                                 }

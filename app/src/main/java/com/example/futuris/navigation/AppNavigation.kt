@@ -43,7 +43,7 @@ enum class Screen {
 
 @Composable
 fun FuturisApp() {
-    var currentScreen by remember { mutableStateOf(Screen.Home) }
+    var currentScreen by remember { mutableStateOf(Screen.Signup) }
 
     // temporary frontend values
     var userFirstName by remember { mutableStateOf("Alex") }
