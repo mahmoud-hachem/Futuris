@@ -11,21 +11,19 @@ data class RegisterRequest(
     val gender: String,
     val username: String,
     val email: String,
-    val password: String,
-    val lifeFocus: String,
-    val state: String,
-    val intent: String
+    val password: String
 )
 
 data class RegisterResponse(
     val message: String,
-    val user: UserData
+    val user: UserData? = null
 )
 
 data class UserData(
     val username: String,
-    val insights: List<String>
+    val insights: List<String> = emptyList()
 )
+
 data class LoginRequest(
     val email: String,
     val password: String
@@ -33,13 +31,15 @@ data class LoginRequest(
 
 data class LoginResponse(
     val message: String,
-    val user: UserData
+    val user: UserData? = null
 )
+
 interface ApiService {
     @POST("api/auth/login")
     suspend fun loginUser(
         @Body request: LoginRequest
     ): Response<LoginResponse>
+
     @POST("api/auth/register")
     suspend fun registerUser(
         @Body request: RegisterRequest

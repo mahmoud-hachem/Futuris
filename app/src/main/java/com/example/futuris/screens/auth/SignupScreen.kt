@@ -33,7 +33,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBars
 
 @Composable
-
 fun SignupScreen(onGoLogin: () -> Unit) {
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
@@ -50,16 +49,8 @@ fun SignupScreen(onGoLogin: () -> Unit) {
     var confirmPassword by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
 
-    // NEW
-    var lifeFocus by remember { mutableStateOf("") }
-    var state by remember { mutableStateOf("") }
-    var intent by remember { mutableStateOf("") }
-
     // ===== DROPDOWNS =====
     var genderExpanded by remember { mutableStateOf(false) }
-    var focusExpanded by remember { mutableStateOf(false) }
-    var stateExpanded by remember { mutableStateOf(false) }
-    var intentExpanded by remember { mutableStateOf(false) }
 
     // ===== ERRORS =====
     var firstNameError by remember { mutableStateOf("") }
@@ -70,10 +61,6 @@ fun SignupScreen(onGoLogin: () -> Unit) {
     var emailError by remember { mutableStateOf("") }
     var passwordError by remember { mutableStateOf("") }
     var confirmPasswordError by remember { mutableStateOf("") }
-    var focusError by remember { mutableStateOf("") }
-    var stateError by remember { mutableStateOf("") }
-    var intentError by remember { mutableStateOf("") }
-
 
     FuturisBackground {
         Column(
@@ -84,7 +71,6 @@ fun SignupScreen(onGoLogin: () -> Unit) {
                 .padding(horizontal = 22.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
             Spacer(modifier = Modifier.height(12.dp))
 
             Image(
@@ -95,14 +81,22 @@ fun SignupScreen(onGoLogin: () -> Unit) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Text("Create account", color = TitleWhite, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            Text("Sign up to get started", color = SoftText, fontSize = 13.sp)
+            Text(
+                "Create account",
+                color = TitleWhite,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "Sign up to get started",
+                color = SoftText,
+                fontSize = 13.sp
+            )
 
             Spacer(modifier = Modifier.height(14.dp))
 
             // ===== NAME =====
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-
                 Column(modifier = Modifier.weight(1f)) {
                     FuturisField(
                         value = firstName,
@@ -134,7 +128,6 @@ fun SignupScreen(onGoLogin: () -> Unit) {
 
             // ===== DOB + GENDER =====
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-
                 Column(modifier = Modifier.weight(1f)) {
                     FuturisField(
                         value = dateOfBirth,
@@ -158,18 +151,27 @@ fun SignupScreen(onGoLogin: () -> Unit) {
                         )
 
                         Box(
-                            modifier = Modifier.matchParentSize().clickable(
-                                indication = null,
-                                interactionSource = remember { MutableInteractionSource() }
-                            ) { genderExpanded = true }
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clickable(
+                                    indication = null,
+                                    interactionSource = remember { MutableInteractionSource() }
+                                ) { genderExpanded = true }
                         )
 
-                        DropdownMenu(expanded = genderExpanded, onDismissRequest = { genderExpanded = false }) {
+                        DropdownMenu(
+                            expanded = genderExpanded,
+                            onDismissRequest = { genderExpanded = false }
+                        ) {
                             listOf("Male", "Female").forEach {
-                                DropdownMenuItem(text = { Text(it) }, onClick = {
-                                    gender = it
-                                    genderExpanded = false
-                                })
+                                DropdownMenuItem(
+                                    text = { Text(it) },
+                                    onClick = {
+                                        gender = it
+                                        genderError = ""
+                                        genderExpanded = false
+                                    }
+                                )
                             }
                         }
                     }
@@ -234,76 +236,65 @@ fun SignupScreen(onGoLogin: () -> Unit) {
             )
             if (confirmPasswordError.isNotEmpty()) ErrorText(confirmPasswordError)
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // ===== NEW FIELDS =====
-            DropdownField("Life Focus", lifeFocus, focusExpanded, { focusExpanded = true }, { focusExpanded = false },
-                listOf("Career", "Love", "Finance", "Growth")) { lifeFocus = it }
-            if (focusError.isNotEmpty()) ErrorText(focusError)
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            DropdownField("Current State", state, stateExpanded, { stateExpanded = true }, { stateExpanded = false },
-                listOf("Confident", "Lost", "Stressed", "Motivated")) { state = it }
-            if (stateError.isNotEmpty()) ErrorText(stateError)
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            DropdownField("Intent", intent, intentExpanded, { intentExpanded = true }, { intentExpanded = false },
-                listOf("Clarity", "Direction", "Opportunities", "Balance")) { intent = it }
-            if (intentError.isNotEmpty()) ErrorText(intentError)
-
             Spacer(modifier = Modifier.height(12.dp))
 
             // ===== SUBMIT =====
             FuturisButton("Create account") {
-
-                android.util.Log.d("SIGNUP", "BUTTON CLICKED")
-
                 focusManager.clearFocus()
                 var isValid = true
 
-                if (!isLettersOnly(firstName)) { firstNameError = "Letters only"; isValid = false }
-                if (!isLettersOnly(lastName)) { lastNameError = "Letters only"; isValid = false }
-
-                if (!isValidDate(dateOfBirth)) {
-                    dateError = "Invalid date"; isValid = false
-                } else if (!isAgeValid(dateOfBirth)) {
-                    dateError = "Must be 13+"; isValid = false
+                if (!isLettersOnly(firstName)) {
+                    firstNameError = "Letters only"
+                    isValid = false
                 }
 
-                if (gender.isBlank()) { genderError = "Required"; isValid = false }
-                if (username.isBlank()) { usernameError = "Required"; isValid = false }
-                if (!isValidEmail(email)) { emailError = "Invalid email"; isValid = false }
+                if (!isLettersOnly(lastName)) {
+                    lastNameError = "Letters only"
+                    isValid = false
+                }
+
+                if (!isValidDate(dateOfBirth)) {
+                    dateError = "Invalid date"
+                    isValid = false
+                } else if (!isAgeValid(dateOfBirth)) {
+                    dateError = "Must be 13+"
+                    isValid = false
+                }
+
+                if (gender.isBlank()) {
+                    genderError = "Required"
+                    isValid = false
+                }
+
+                if (username.isBlank()) {
+                    usernameError = "Required"
+                    isValid = false
+                }
+
+                if (!isValidEmail(email)) {
+                    emailError = "Invalid email"
+                    isValid = false
+                }
 
                 if (!isStrongPassword(password)) {
-                    passwordError = "Min 6 chars + 1 number"; isValid = false
+                    passwordError = "Min 6 chars + 1 number"
+                    isValid = false
                 }
 
                 if (confirmPassword != password) {
-                    confirmPasswordError = "Passwords do not match"; isValid = false
+                    confirmPasswordError = "Passwords do not match"
+                    isValid = false
                 }
 
-                if (lifeFocus.isBlank()) { focusError = "Required"; isValid = false }
-                if (state.isBlank()) { stateError = "Required"; isValid = false }
-                if (intent.isBlank()) { intentError = "Required"; isValid = false }
-
-                android.util.Log.d("SIGNUP", "BUTTON CLICKED")
-
                 if (isValid) {
-                    android.util.Log.d("SIGNUP", "VALIDATION PASSED → CALLING API")
-
                     val request = RegisterRequest(
-                        firstName,
-                        lastName,
-                        dateOfBirth,
-                        gender,
-                        username,
-                        email,
-                        password,
-                        lifeFocus,
-                        state,
-                        intent
+                        firstName = firstName,
+                        lastName = lastName,
+                        dateOfBirth = dateOfBirth,
+                        gender = gender,
+                        username = username,
+                        email = email,
+                        password = password
                     )
 
                     kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
@@ -311,21 +302,15 @@ fun SignupScreen(onGoLogin: () -> Unit) {
                             val response = RetrofitClient.api.registerUser(request)
 
                             Handler(Looper.getMainLooper()).post {
-
                                 if (response.isSuccessful) {
-
-                                    android.util.Log.d("SIGNUP", "SUCCESS")
-
                                     Toast.makeText(
                                         context,
                                         "Account created successfully. Please log in.",
                                         Toast.LENGTH_LONG
                                     ).show()
 
-                                    onGoLogin() // 🔥 REDIRECT
-
+                                    onGoLogin()
                                 } else {
-
                                     val errorMsg = response.errorBody()?.string()
                                     android.util.Log.d("SIGNUP", "ERROR: $errorMsg")
 
@@ -336,14 +321,16 @@ fun SignupScreen(onGoLogin: () -> Unit) {
                                     ).show()
                                 }
                             }
-
                         } catch (e: Exception) {
-                            android.util.Log.d("SIGNUP", "EXCEPTION: ${e.message}")
+                            Handler(Looper.getMainLooper()).post {
+                                Toast.makeText(
+                                    context,
+                                    "Network error: ${e.message}",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
                         }
                     }
-
-                } else {
-                    println("VALIDATION FAILED ❌")
                 }
             }
 
@@ -351,9 +338,13 @@ fun SignupScreen(onGoLogin: () -> Unit) {
 
             Row {
                 Text("Already have an account? ", color = SoftText, fontSize = 13.sp)
-                Text("Log in", color = LinkPurple, fontWeight = FontWeight.Bold,
+                Text(
+                    "Log in",
+                    color = LinkPurple,
+                    fontWeight = FontWeight.Bold,
                     fontSize = 13.sp,
-                    modifier = Modifier.clickable { onGoLogin() })
+                    modifier = Modifier.clickable { onGoLogin() }
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -361,41 +352,6 @@ fun SignupScreen(onGoLogin: () -> Unit) {
     }
 }
 
-// ===== DROPDOWN =====
-@Composable
-fun DropdownField(
-    placeholder: String,
-    value: String,
-    expanded: Boolean,
-    onExpand: () -> Unit,
-    onDismiss: () -> Unit,
-    options: List<String>,
-    onSelect: (String) -> Unit
-) {
-    Column {
-        Box {
-            FuturisField(value = value, onValueChange = {}, placeholder = placeholder, height = 48)
-
-            Box(
-                modifier = Modifier.matchParentSize().clickable(
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() }
-                ) { onExpand() }
-            )
-
-            DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
-                options.forEach {
-                    DropdownMenuItem(text = { Text(it) }, onClick = {
-                        onSelect(it)
-                        onDismiss()
-                    })
-                }
-            }
-        }
-    }
-}
-
-// ===== HELPERS =====
 @Composable
 fun ErrorText(message: String) {
     Text(message, color = Color.Red, fontSize = 12.sp)
