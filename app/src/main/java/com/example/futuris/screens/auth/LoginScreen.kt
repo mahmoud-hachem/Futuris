@@ -166,6 +166,8 @@ fun LoginScreen(
                                         val loggedUsername = user?.username?.trim().orEmpty()
                                         val loggedFirstName = user?.firstName?.trim().orEmpty()
                                         val loggedLastName = user?.lastName?.trim().orEmpty()
+                                        val loggedDateOfBirth = user?.dateOfBirth?.trim().orEmpty()
+                                        val loggedGender = user?.gender?.trim().orEmpty()
 
                                         val safeUsername =
                                             if (loggedUsername.isNotBlank()) loggedUsername else "User"
@@ -187,6 +189,8 @@ fun LoginScreen(
                                             .putString("firstName", loggedFirstName)
                                             .putString("lastName", loggedLastName)
                                             .putString("email", cleanEmail)
+                                            .putString("dateOfBirth", loggedDateOfBirth)
+                                            .putString("gender", loggedGender)
                                             .apply()
 
                                         onLoginSuccess(

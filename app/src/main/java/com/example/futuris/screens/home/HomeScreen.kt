@@ -89,7 +89,6 @@ fun HomeScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
 
-        // Background
         Image(
             painter = painterResource(id = R.drawable.home_bg),
             contentDescription = "Background",
@@ -104,7 +103,6 @@ fun HomeScreen(
                 .navigationBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-            // ── Greeting ──
             val greeting = when (java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)) {
                 in 5..11 -> "Good morning"
                 in 12..17 -> "Good afternoon"
@@ -130,7 +128,6 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ── Category grid + Destiny Quiz ──
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 modifier = Modifier.weight(1f),
@@ -153,7 +150,6 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ── Bottom bar ──
             GlassBottomBar(
                 selectedTab = currentTab,
                 tabs = tabs,
@@ -179,7 +175,11 @@ fun CategoryCard(
                 .height(130.dp)
                 .clip(RoundedCornerShape(18.dp))
                 .clickable { onClick() }
-                .border(width = 1.dp, color = Color(0x44FFFFFF), shape = RoundedCornerShape(18.dp))
+                .border(
+                    width = 1.dp,
+                    color = Color(0x44FFFFFF),
+                    shape = RoundedCornerShape(18.dp)
+                )
         ) {
             Image(
                 painter = painterResource(id = imageRes),
@@ -187,7 +187,7 @@ fun CategoryCard(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
-            // subtle bottom fade so text is readable
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -224,7 +224,10 @@ fun DestinyQuizCard(onClick: () -> Unit) {
                     colors = listOf(Color(0x772E0C52), Color(0x99310C56))
                 )
             )
-            .border(BorderStroke(1.dp, Color(0x88C68CFF)), shape = RoundedCornerShape(22.dp))
+            .border(
+                BorderStroke(1.dp, Color(0x88C68CFF)),
+                shape = RoundedCornerShape(22.dp)
+            )
             .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {
@@ -248,7 +251,9 @@ fun DestinyQuizCard(onClick: () -> Unit) {
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
+
                     Spacer(modifier = Modifier.height(4.dp))
+
                     Text(
                         text = "Let Futuris guide your future\nthrough questions",
                         color = Color(0xFFE6D7F6),
@@ -296,7 +301,10 @@ fun GlassBottomBar(
                     colors = listOf(Color(0x663B0B57), Color(0x9920032E))
                 )
             )
-            .border(BorderStroke(1.dp, Color(0x55C68CFF)), shape = RoundedCornerShape(24.dp))
+            .border(
+                BorderStroke(1.dp, Color(0x55C68CFF)),
+                shape = RoundedCornerShape(24.dp)
+            )
             .padding(horizontal = 8.dp, vertical = 8.dp)
     ) {
         Row(
@@ -346,12 +354,15 @@ fun GlassBottomBarItem(
                         )
                 )
             }
+
             Image(
                 painter = painterResource(id = iconRes),
                 contentDescription = label,
                 modifier = Modifier.size(22.dp),
                 contentScale = ContentScale.Fit,
-                colorFilter = ColorFilter.tint(if (selected) activeColor else inactiveColor)
+                colorFilter = ColorFilter.tint(
+                    if (selected) activeColor else inactiveColor
+                )
             )
         }
 

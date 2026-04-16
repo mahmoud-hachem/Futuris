@@ -349,6 +349,18 @@ fun SignupScreen(onGoLogin: () -> Unit) {
                                     isLoading = false
 
                                     if (response.isSuccessful) {
+
+                                        val prefs = context.getSharedPreferences(
+                                            "FuturisPrefs",
+                                            android.content.Context.MODE_PRIVATE
+                                        )
+
+                                        prefs.edit()
+                                            .putString("userId", email.trim())
+                                            .putString("firstName", firstName.trim())
+                                            .putString("dateOfBirth", dateOfBirth.trim())
+                                            .apply()
+
                                         Toast.makeText(
                                             context,
                                             "Account created successfully. Please log in.",

@@ -7,6 +7,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import com.example.futuris.data.QuizMemoryStore
+import com.example.futuris.data.QuizRepository
 import com.example.futuris.screens.alerts.AlertsScreen
 import com.example.futuris.screens.auth.CreateNewPasswordScreen
 import com.example.futuris.screens.auth.EmailVerificationScreen
@@ -20,6 +22,7 @@ import com.example.futuris.screens.categories.FinanceScreen
 import com.example.futuris.screens.categories.LifePathScreen
 import com.example.futuris.screens.categories.LoveScreen
 import com.example.futuris.screens.categories.MoodScreen
+import com.example.futuris.screens.categories.QuizScreen
 import com.example.futuris.screens.chat.ChatScreen
 import com.example.futuris.screens.home.HomeScreen
 import com.example.futuris.screens.profile.AccountInfoUiState
@@ -34,6 +37,7 @@ enum class Screen {
     EmailVerification,
     CreateNewPassword,
     Home,
+    Quiz,
     Love,
     Career,
     Finance,
@@ -50,8 +54,10 @@ enum class Screen {
 fun FuturisApp() {
     val context = LocalContext.current
 
+    QuizMemoryStore.init(context)
+
     val prefs = context.getSharedPreferences(
-        "futuris_prefs",
+        "FuturisPrefs",
         Context.MODE_PRIVATE
     )
 
@@ -62,12 +68,18 @@ fun FuturisApp() {
     val savedEmail = prefs.getString("email", "alex@email.com") ?: "alex@email.com"
     val savedDateOfBirth = prefs.getString("dateOfBirth", "") ?: ""
     val savedGender = prefs.getString("gender", "") ?: ""
+    val savedUserId = prefs.getString("userId", savedEmail)?.ifBlank { savedEmail } ?: savedEmail
     val savedNotificationsEnabled = prefs.getBoolean("notificationsEnabled", true)
     val savedInsightReminders = prefs.getBoolean("insightReminders", true)
+    val savedBaseQuizCompleted = prefs.getBoolean("isBaseQuizCompleted", false)
 
     var currentScreen by remember {
         mutableStateOf(
-            if (savedLogin) Screen.Home else Screen.Login
+            when {
+                !savedLogin -> Screen.Login
+                !savedBaseQuizCompleted -> Screen.Quiz
+                else -> Screen.Home
+            }
         )
     }
 
@@ -77,12 +89,19 @@ fun FuturisApp() {
     var userEmail by remember { mutableStateOf(savedEmail) }
     var userDateOfBirth by remember { mutableStateOf(savedDateOfBirth) }
     var userGender by remember { mutableStateOf(savedGender) }
+    var userId by remember { mutableStateOf(savedUserId) }
     var notificationsEnabled by remember { mutableStateOf(savedNotificationsEnabled) }
     var insightReminders by remember { mutableStateOf(savedInsightReminders) }
 
     when (currentScreen) {
         Screen.Splash -> SplashScreen(
-            onDone = { currentScreen = Screen.Home }
+            onDone = {
+                currentScreen = when {
+                    !prefs.getBoolean("isLoggedIn", false) -> Screen.Login
+                    !prefs.getBoolean("isBaseQuizCompleted", false) -> Screen.Quiz
+                    else -> Screen.Home
+                }
+            }
         )
 
         Screen.Login -> LoginScreen(
@@ -93,6 +112,7 @@ fun FuturisApp() {
                 userFirstName = firstName
                 userLastName = lastName
                 userEmail = email
+                userId = email.ifBlank { "default_user" }
 
                 prefs.edit()
                     .putBoolean("isLoggedIn", true)
@@ -100,9 +120,14 @@ fun FuturisApp() {
                     .putString("firstName", userFirstName)
                     .putString("lastName", userLastName)
                     .putString("email", userEmail)
+                    .putString("userId", userId)
                     .apply()
 
-                currentScreen = Screen.Home
+                val isBaseQuizCompleted =
+                    prefs.getBoolean("isBaseQuizCompleted", false)
+
+                currentScreen =
+                    if (isBaseQuizCompleted) Screen.Home else Screen.Quiz
             }
         )
 
@@ -144,6 +169,24 @@ fun FuturisApp() {
                     "alerts" -> currentScreen = Screen.Alerts
                     "profile" -> currentScreen = Screen.Profile
                 }
+            },
+            onDestinyQuizClick = {
+                currentScreen = Screen.Quiz
+            }
+        )
+
+        Screen.Quiz -> QuizScreen(
+            userId = userId,
+            questions = QuizRepository.mandatoryQuestions,
+            onBackClick = {
+                currentScreen = Screen.Home
+            },
+            onQuizFinished = {
+                prefs.edit()
+                    .putBoolean("isBaseQuizCompleted", true)
+                    .apply()
+
+                currentScreen = Screen.Home
             }
         )
 
@@ -272,12 +315,15 @@ fun FuturisApp() {
             onLogout = {
                 prefs.edit().clear().apply()
 
+                QuizMemoryStore.clearAnswers(userId)
+
                 userUsername = "Alex"
                 userFirstName = ""
                 userLastName = ""
                 userEmail = "alex@email.com"
                 userDateOfBirth = ""
                 userGender = ""
+                userId = "default_user"
                 notificationsEnabled = true
                 insightReminders = true
                 currentScreen = Screen.Login
@@ -311,6 +357,7 @@ fun FuturisApp() {
                     .putString("lastName", userLastName)
                     .putString("username", userUsername)
                     .putString("email", userEmail)
+                    .putString("userId", userId)
                     .putBoolean("notificationsEnabled", notificationsEnabled)
                     .putBoolean("insightReminders", insightReminders)
                     .apply()

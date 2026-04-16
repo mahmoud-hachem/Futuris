@@ -1,19 +1,33 @@
 package com.example.futuris.screens.chat
 
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,9 +40,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.futuris.R
+import com.example.futuris.data.ChatMemoryStore
 import com.example.futuris.screens.home.BottomTabItem
 import com.example.futuris.screens.home.GlassBottomBar
-import okhttp3.*
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 import org.json.JSONObject
 import java.io.IOException
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -51,7 +70,7 @@ fun ChatScreen(
 
     val messages = remember { mutableStateListOf<ChatMessage>() }
 
-    val client = OkHttpClient()
+    val client = remember { OkHttpClient() }
 
     val tabs = remember {
         listOf(
@@ -63,7 +82,6 @@ fun ChatScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-
         Image(
             painter = painterResource(id = R.drawable.home_bg),
             contentDescription = null,
@@ -91,7 +109,6 @@ fun ChatScreen(
                 .statusBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 18.dp)
         ) {
-
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
@@ -126,15 +143,12 @@ fun ChatScreen(
                 onValueChange = { message = it },
                 onSendClick = {
                     if (message.isNotBlank()) {
+                        val userMessage = message.trim()
 
-                        val userMessage = message
-
-                        // add user message
                         messages.add(ChatMessage(userMessage, true))
+                        ChatMemoryStore.addMessage(userMessage)
 
                         message = ""
-
-                        // 🔥 REAL BACKEND CALL (REPLACED FAKE AI)
 
                         val json = JSONObject()
                         json.put("message", userMessage)
@@ -149,11 +163,16 @@ fun ChatScreen(
 
                         client.newCall(request).enqueue(object : Callback {
                             override fun onFailure(call: Call, e: IOException) {
-                                messages.add(ChatMessage("Error connecting to server", false))
+                                androidx.compose.runtime.snapshots.Snapshot.withMutableSnapshot {
+                                    val errorText = "Error connecting to server"
+                                    messages.add(ChatMessage(errorText, false))
+                                    ChatMemoryStore.addMessage(errorText)
+                                }
                             }
 
                             override fun onResponse(call: Call, response: Response) {
-                                val res = response.body?.string()
+                                val res = response.body?.string().orEmpty()
+
                                 val reply = try {
                                     JSONObject(res).getString("reply")
                                 } catch (e: Exception) {
@@ -162,6 +181,7 @@ fun ChatScreen(
 
                                 androidx.compose.runtime.snapshots.Snapshot.withMutableSnapshot {
                                     messages.add(ChatMessage(reply, false))
+                                    ChatMemoryStore.addMessage(reply)
                                 }
                             }
                         })
@@ -182,7 +202,6 @@ fun ChatScreen(
 
 @Composable
 fun ChatBubble(message: ChatMessage) {
-
     val isUser = message.isUser
 
     Row(
