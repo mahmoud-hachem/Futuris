@@ -27,6 +27,9 @@ import com.example.futuris.screens.chat.ChatScreen
 import com.example.futuris.screens.home.HomeScreen
 import com.example.futuris.screens.profile.AccountInfoUiState
 import com.example.futuris.screens.profile.AccountInformationScreen
+import com.example.futuris.screens.profile.NotificationsScreen
+import com.example.futuris.screens.profile.PrivacySecurityScreen
+import com.example.futuris.screens.profile.HelpSupportScreen
 import com.example.futuris.screens.profile.ProfileScreen
 
 enum class Screen {
@@ -47,7 +50,10 @@ enum class Screen {
     Chat,
     Alerts,
     Profile,
-    AccountInformation
+    AccountInformation,
+    Notifications,
+    PrivacySecurity,
+    HelpSupport
 }
 
 @Composable
@@ -69,6 +75,7 @@ fun FuturisApp() {
     val savedDateOfBirth = prefs.getString("dateOfBirth", "") ?: ""
     val savedGender = prefs.getString("gender", "") ?: ""
     val savedUserId = prefs.getString("userId", savedEmail)?.ifBlank { savedEmail } ?: savedEmail
+    val savedLifeFocus = prefs.getString("lifeFocus", "") ?: ""
     val savedNotificationsEnabled = prefs.getBoolean("notificationsEnabled", true)
     val savedInsightReminders = prefs.getBoolean("insightReminders", true)
     val savedBaseQuizCompleted = prefs.getBoolean("isBaseQuizCompleted", false)
@@ -89,6 +96,7 @@ fun FuturisApp() {
     var userEmail by remember { mutableStateOf(savedEmail) }
     var userDateOfBirth by remember { mutableStateOf(savedDateOfBirth) }
     var userGender by remember { mutableStateOf(savedGender) }
+    var userLifeFocus by remember { mutableStateOf(savedLifeFocus) }
     var userId by remember { mutableStateOf(savedUserId) }
     var notificationsEnabled by remember { mutableStateOf(savedNotificationsEnabled) }
     var insightReminders by remember { mutableStateOf(savedInsightReminders) }
@@ -300,6 +308,10 @@ fun FuturisApp() {
             firstName = if (userFirstName.isNotBlank()) userFirstName else userUsername,
             lastName = userLastName,
             email = userEmail,
+            dateOfBirth = userDateOfBirth,
+            gender = userGender,
+            username = userUsername,
+            lifeFocus = userLifeFocus,
             currentTab = "profile",
             onTabSelected = { tab ->
                 when (tab) {
@@ -312,6 +324,15 @@ fun FuturisApp() {
             onOpenAccountInformation = {
                 currentScreen = Screen.AccountInformation
             },
+            onOpenNotifications = {
+                currentScreen = Screen.Notifications
+            },
+            onOpenPrivacy = {
+                currentScreen = Screen.PrivacySecurity
+            },
+            onOpenHelp = {
+                currentScreen = Screen.HelpSupport
+            },
             onLogout = {
                 prefs.edit().clear().apply()
 
@@ -323,6 +344,7 @@ fun FuturisApp() {
                 userEmail = "alex@email.com"
                 userDateOfBirth = ""
                 userGender = ""
+                userLifeFocus = ""
                 userId = "default_user"
                 notificationsEnabled = true
                 insightReminders = true
@@ -367,6 +389,30 @@ fun FuturisApp() {
             onChangePasswordClick = {
                 currentScreen = Screen.ResetPassword
             }
+        )
+
+        Screen.Notifications -> NotificationsScreen(
+            notificationsEnabled = notificationsEnabled,
+            insightReminders = insightReminders,
+            onBackClick = { currentScreen = Screen.Profile },
+            onSave = { notifEnabled, insightRemind ->
+                notificationsEnabled = notifEnabled
+                insightReminders = insightRemind
+                prefs.edit()
+                    .putBoolean("notificationsEnabled", notificationsEnabled)
+                    .putBoolean("insightReminders", insightReminders)
+                    .apply()
+                currentScreen = Screen.Profile
+            }
+        )
+
+        Screen.PrivacySecurity -> PrivacySecurityScreen(
+            onBackClick = { currentScreen = Screen.Profile },
+            onChangePassword = { currentScreen = Screen.ResetPassword }
+        )
+
+        Screen.HelpSupport -> HelpSupportScreen(
+            onBackClick = { currentScreen = Screen.Profile }
         )
     }
 }
