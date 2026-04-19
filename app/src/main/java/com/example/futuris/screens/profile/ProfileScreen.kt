@@ -265,21 +265,21 @@ private fun ProfileHeaderCard(
             .clip(RoundedCornerShape(28.dp))
             .background(CardFill)
             .border(BorderStroke(1.dp, CardBorder), RoundedCornerShape(28.dp))
-            .padding(vertical = 24.dp, horizontal = 20.dp)
+            .padding(vertical = 16.dp, horizontal = 16.dp)
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
 
             // Avatar
             Box(
                 modifier = Modifier
-                    .size(110.dp)
+                    .size(86.dp)
                     .clip(CircleShape)
                     .background(Brush.radialGradient(listOf(AvatarGlow, Color(0x33FFFFFF), Color.Transparent))),
                 contentAlignment = Alignment.Center
             ) {
                 Box(
                     modifier = Modifier
-                        .size(90.dp)
+                        .size(70.dp)
                         .clip(CircleShape)
                         .background(Color(0x66F3EAFF))
                         .border(2.dp, AvatarBorder, CircleShape)
@@ -297,7 +297,7 @@ private fun ProfileHeaderCard(
                         Text(
                             text = initials,
                             color = Color.White,
-                            fontSize = 28.sp,
+                            fontSize = 22.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -306,8 +306,8 @@ private fun ProfileHeaderCard(
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(end = 4.dp, bottom = 4.dp)
-                        .size(28.dp)
+                        .padding(end = 2.dp, bottom = 2.dp)
+                        .size(24.dp)
                         .clip(CircleShape)
                         .background(Color(0xFFB15CFF))
                         .border(1.dp, Color.White, CircleShape),
@@ -317,38 +317,40 @@ private fun ProfileHeaderCard(
                         imageVector = Icons.Outlined.CameraAlt,
                         contentDescription = null,
                         tint = Color.White,
-                        modifier = Modifier.size(14.dp)
+                        modifier = Modifier.size(12.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            Text(fullName, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+            Text(fullName, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(2.dp))
 
-            Text("@$username", color = Color(0xFFD4BAFF), fontSize = 14.sp)
+            Text("@$username", color = Color(0xFFD4BAFF), fontSize = 13.sp)
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(2.dp))
 
-            Text(email, color = SubtleText, fontSize = 13.sp)
+            Text(email, color = SubtleText, fontSize = 12.sp)
 
-            Spacer(modifier = Modifier.height(16.dp))
+            if ((zodiac.isNotBlank() && zodiac != "Unknown") || gender.isNotBlank() || lifeFocus.isNotBlank()) {
+                Spacer(modifier = Modifier.height(12.dp))
 
-            // ── Stat pills ──
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                if (zodiac.isNotBlank() && zodiac != "Unknown") {
-                    StatPill(label = "Zodiac", value = zodiac, modifier = Modifier.weight(1f))
-                }
-                if (gender.isNotBlank()) {
-                    StatPill(label = "Gender", value = gender, modifier = Modifier.weight(1f))
-                }
-                if (lifeFocus.isNotBlank()) {
-                    StatPill(label = "Focus", value = lifeFocus, modifier = Modifier.weight(1f))
+                // ── Stat pills ──
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (zodiac.isNotBlank() && zodiac != "Unknown") {
+                        StatPill(label = "Zodiac", value = zodiac, modifier = Modifier.weight(1f))
+                    }
+                    if (gender.isNotBlank()) {
+                        StatPill(label = "Gender", value = gender, modifier = Modifier.weight(1f))
+                    }
+                    if (lifeFocus.isNotBlank()) {
+                        StatPill(label = "Focus", value = lifeFocus, modifier = Modifier.weight(1f))
+                    }
                 }
             }
         }

@@ -1,5 +1,7 @@
 package com.example.futuris.screens.profile
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -32,7 +34,9 @@ fun PrivacySecurityScreen(
 ) {
     var dataAnalytics   by remember { mutableStateOf(true) }
     var personalization by remember { mutableStateOf(true) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog  by remember { mutableStateOf(false) }
+    var showPrivacyDialog by remember { mutableStateOf(false) }
+    var showTermsDialog   by remember { mutableStateOf(false) }
 
     val cardFill   = Color(0x8F4B1D76)
     val cardBorder = Color(0x55E3CCFF)
@@ -145,14 +149,14 @@ fun PrivacySecurityScreen(
                             icon = Icons.Outlined.Description,
                             title = "Privacy Policy",
                             subtitle = "How we handle your data",
-                            onClick = { }
+                            onClick = { showPrivacyDialog = true }
                         )
                         HorizontalDivider(color = Color.White.copy(alpha = 0.07f), modifier = Modifier.padding(horizontal = 16.dp))
                         PrivacyActionRow(
                             icon = Icons.Outlined.Gavel,
                             title = "Terms of Service",
                             subtitle = "Rules and conditions of use",
-                            onClick = { }
+                            onClick = { showTermsDialog = true }
                         )
                     }
                 }
@@ -214,6 +218,84 @@ fun PrivacySecurityScreen(
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
                     Text("Cancel", color = Color(0xFFD8B8FF))
+                }
+            }
+        )
+    }
+
+    // Privacy Policy dialog
+    if (showPrivacyDialog) {
+        AlertDialog(
+            onDismissRequest = { showPrivacyDialog = false },
+            containerColor = Color(0xFF1C1030),
+            title = {
+                Text("Privacy Policy", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 400.dp)
+                        .verticalScroll(androidx.compose.foundation.rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    PolicySection("1. Data We Collect",
+                        "Futuris collects personal information you provide during registration (name, email, date of birth, gender), your quiz answers, chat messages, and app usage patterns. This data is used exclusively to generate personalized predictions and improve your experience.")
+                    PolicySection("2. How We Use Your Data",
+                        "Your data is used to generate AI-driven predictions, personalize your insights across categories, and improve the accuracy of our prediction engine. We do not use your data for advertising purposes.")
+                    PolicySection("3. Data Storage & Security",
+                        "All data is encrypted in transit using TLS and stored securely on our servers. We follow ISO/IEC 27701 standards for privacy information management. Access to your data is restricted to authorized systems only.")
+                    PolicySection("4. Third-Party Sharing",
+                        "Futuris does not sell, rent, or share your personal data with third parties for marketing purposes. We may use trusted service providers (such as cloud infrastructure) who process data solely on our behalf.")
+                    PolicySection("5. Your Rights",
+                        "You have the right to access, correct, or delete your personal data at any time. You may request account deletion from the Privacy & Security settings. Deletion requests are processed within 30 days.")
+                    PolicySection("6. Contact",
+                        "For privacy-related inquiries, contact us at: futurisesib@gmail.com")
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showPrivacyDialog = false }) {
+                    Text("Close", color = Color(0xFFD8B8FF), fontWeight = FontWeight.SemiBold)
+                }
+            }
+        )
+    }
+
+    // Terms of Service dialog
+    if (showTermsDialog) {
+        AlertDialog(
+            onDismissRequest = { showTermsDialog = false },
+            containerColor = Color(0xFF1C1030),
+            title = {
+                Text("Terms of Service", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 400.dp)
+                        .verticalScroll(androidx.compose.foundation.rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    PolicySection("1. Acceptance of Terms",
+                        "By using Futuris, you agree to these Terms of Service. If you do not agree, please do not use the application. These terms apply to all users of the Futuris mobile application.")
+                    PolicySection("2. Nature of Predictions",
+                        "Futuris provides AI-generated insights and predictions for entertainment and self-reflection purposes only. Predictions are probabilistic and should not be used as the sole basis for major life decisions.")
+                    PolicySection("3. User Responsibilities",
+                        "You are responsible for maintaining the confidentiality of your account credentials. You agree not to misuse the platform, attempt to reverse-engineer the AI, or provide false information during registration.")
+                    PolicySection("4. Intellectual Property",
+                        "All content, design, and AI systems within Futuris are the intellectual property of the Futuris team. You may not copy, distribute, or modify any part of the application without prior written consent.")
+                    PolicySection("5. Limitation of Liability",
+                        "Futuris is provided as-is. We are not liable for any decisions made based on the predictions generated by the application. Use of the app is at your own discretion and risk.")
+                    PolicySection("6. Changes to Terms",
+                        "We reserve the right to update these terms at any time. Continued use of the app after changes constitutes acceptance of the new terms.")
+                    PolicySection("7. Contact",
+                        "For terms-related inquiries, contact us at: futurisesib@gmail.com")
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showTermsDialog = false }) {
+                    Text("Close", color = Color(0xFFD8B8FF), fontWeight = FontWeight.SemiBold)
                 }
             }
         )
@@ -313,5 +395,12 @@ private fun PrivacyToggleRow(
                 uncheckedTrackColor = Color(0x33FFFFFF)
             )
         )
+    }
+}
+@Composable
+private fun PolicySection(title: String, body: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(title, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        Text(body, color = Color(0xFFE9DDF6), fontSize = 12.sp, lineHeight = 18.sp)
     }
 }

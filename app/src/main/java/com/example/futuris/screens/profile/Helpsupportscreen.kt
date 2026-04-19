@@ -118,27 +118,7 @@ fun HelpSupportScreen(onBackClick: () -> Unit) {
                         ContactRow(
                             icon = Icons.Outlined.Email,
                             title = "Email Support",
-                            subtitle = "support@futuris.app",
-                            onClick = { }
-                        )
-                        HorizontalDivider(
-                            color = Color.White.copy(alpha = 0.07f),
-                            modifier = Modifier.padding(horizontal = 16.dp)
-                        )
-                        ContactRow(
-                            icon = Icons.Outlined.Chat,
-                            title = "Live Chat",
-                            subtitle = "Chat with our support team",
-                            onClick = { }
-                        )
-                        HorizontalDivider(
-                            color = Color.White.copy(alpha = 0.07f),
-                            modifier = Modifier.padding(horizontal = 16.dp)
-                        )
-                        ContactRow(
-                            icon = Icons.Outlined.BugReport,
-                            title = "Report a Bug",
-                            subtitle = "Help us fix issues you encounter",
+                            subtitle = "futurisesib@gmail.com",
                             onClick = { }
                         )
                     }

@@ -98,6 +98,7 @@ fun FuturisApp() {
     var userGender by remember { mutableStateOf(savedGender) }
     var userLifeFocus by remember { mutableStateOf(savedLifeFocus) }
     var userId by remember { mutableStateOf(savedUserId) }
+    var passwordChangeReturnScreen by remember { mutableStateOf(Screen.Login) }
     var notificationsEnabled by remember { mutableStateOf(savedNotificationsEnabled) }
     var insightReminders by remember { mutableStateOf(savedInsightReminders) }
 
@@ -145,7 +146,7 @@ fun FuturisApp() {
 
         Screen.ResetPassword -> ResetPasswordScreen(
             onContinue = { currentScreen = Screen.EmailVerification },
-            onBackToLogin = { currentScreen = Screen.Login }
+            onBackToLogin = { currentScreen = passwordChangeReturnScreen }
         )
 
         Screen.EmailVerification -> EmailVerificationScreen(
@@ -154,7 +155,7 @@ fun FuturisApp() {
         )
 
         Screen.CreateNewPassword -> CreateNewPasswordScreen(
-            onResetDone = { currentScreen = Screen.Login }
+            onResetDone = { currentScreen = passwordChangeReturnScreen }
         )
 
         Screen.Home -> HomeScreen(
@@ -387,6 +388,7 @@ fun FuturisApp() {
             onChangePhotoClick = {
             },
             onChangePasswordClick = {
+                passwordChangeReturnScreen = Screen.Profile
                 currentScreen = Screen.ResetPassword
             }
         )
@@ -408,7 +410,10 @@ fun FuturisApp() {
 
         Screen.PrivacySecurity -> PrivacySecurityScreen(
             onBackClick = { currentScreen = Screen.Profile },
-            onChangePassword = { currentScreen = Screen.ResetPassword }
+            onChangePassword = {
+                passwordChangeReturnScreen = Screen.Profile
+                currentScreen = Screen.ResetPassword
+            }
         )
 
         Screen.HelpSupport -> HelpSupportScreen(
