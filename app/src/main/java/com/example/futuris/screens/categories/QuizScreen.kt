@@ -1,5 +1,6 @@
 package com.example.futuris.screens.categories
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -36,6 +37,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import com.example.futuris.data.AlertItem
+import com.example.futuris.data.AlertMemoryStore
 import com.example.futuris.data.QuizMemoryStore
 import com.example.futuris.model.QuizQuestion
 
@@ -46,6 +50,12 @@ fun QuizScreen(
     onQuizFinished: () -> Unit,
     onBackClick: () -> Unit
 ) {
+    val context = LocalContext.current
+
+    val prefs = remember {
+        context.getSharedPreferences("FuturisPrefs", Context.MODE_PRIVATE)
+    }
+
     val savedAnswers = remember(userId, questions) {
         QuizMemoryStore.getAnswers(userId)
     }
@@ -82,6 +92,24 @@ fun QuizScreen(
         val alreadySavedAnswers = QuizMemoryStore.getAnswers(userId)
 
         if (alreadySavedAnswers.size >= questions.size) {
+            val quizAlertKey = "quiz_completed_alert_$userId"
+
+            if (!prefs.getBoolean(quizAlertKey, false)) {
+                AlertMemoryStore.addAlert(
+                    context = context,
+                    alert = AlertItem(
+                        id = System.currentTimeMillis().toString(),
+                        title = "Destiny Quiz Completed",
+                        message = "Your core signals are now unlocked.",
+                        timeLabel = "Now",
+                        category = "system",
+                        isNew = true
+                    )
+                )
+
+                prefs.edit().putBoolean(quizAlertKey, true).apply()
+            }
+
             onQuizFinished()
         }
     }
@@ -256,6 +284,24 @@ fun QuizScreen(
                             val updatedAnswers = QuizMemoryStore.getAnswers(userId)
 
                             if (updatedAnswers.size >= questions.size) {
+                                val quizAlertKey = "quiz_completed_alert_$userId"
+
+                                if (!prefs.getBoolean(quizAlertKey, false)) {
+                                    AlertMemoryStore.addAlert(
+                                        context = context,
+                                        alert = AlertItem(
+                                            id = System.currentTimeMillis().toString(),
+                                            title = "Destiny Quiz Completed",
+                                            message = "Your core signals are now unlocked.",
+                                            timeLabel = "Now",
+                                            category = "system",
+                                            isNew = true
+                                        )
+                                    )
+
+                                    prefs.edit().putBoolean(quizAlertKey, true).apply()
+                                }
+
                                 onQuizFinished()
                             } else {
                                 currentQuestionIndex = updatedAnswers.size

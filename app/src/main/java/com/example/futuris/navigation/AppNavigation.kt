@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import com.example.futuris.data.OnboardingStateManager
 import com.example.futuris.data.QuizMemoryStore
 import com.example.futuris.data.QuizRepository
 import com.example.futuris.screens.alerts.AlertsScreen
@@ -27,6 +28,9 @@ import com.example.futuris.screens.chat.ChatScreen
 import com.example.futuris.screens.home.HomeScreen
 import com.example.futuris.screens.profile.AccountInfoUiState
 import com.example.futuris.screens.profile.AccountInformationScreen
+import com.example.futuris.screens.profile.HelpSupportScreen
+import com.example.futuris.screens.profile.NotificationPreferencesScreen
+import com.example.futuris.screens.profile.PrivacySecurityScreen
 import com.example.futuris.screens.profile.ProfileScreen
 
 enum class Screen {
@@ -47,7 +51,10 @@ enum class Screen {
     Chat,
     Alerts,
     Profile,
-    AccountInformation
+    AccountInformation,
+    NotificationPreferences,
+    PrivacySecurity,
+    HelpSupport
 }
 
 @Composable
@@ -68,16 +75,21 @@ fun FuturisApp() {
     val savedEmail = prefs.getString("email", "alex@email.com") ?: "alex@email.com"
     val savedDateOfBirth = prefs.getString("dateOfBirth", "") ?: ""
     val savedGender = prefs.getString("gender", "") ?: ""
+    val savedProfileImageUri = prefs.getString("profileImageUri", "") ?: ""
     val savedUserId = prefs.getString("userId", savedEmail)?.ifBlank { savedEmail } ?: savedEmail
     val savedNotificationsEnabled = prefs.getBoolean("notificationsEnabled", true)
     val savedInsightReminders = prefs.getBoolean("insightReminders", true)
-    val savedBaseQuizCompleted = prefs.getBoolean("isBaseQuizCompleted", false)
+
+    val savedOnboardingFinished = OnboardingStateManager.isOnboardingFinished(
+        context = context,
+        userId = savedUserId
+    )
 
     var currentScreen by remember {
         mutableStateOf(
             when {
                 !savedLogin -> Screen.Login
-                !savedBaseQuizCompleted -> Screen.Quiz
+                !savedOnboardingFinished -> Screen.Quiz
                 else -> Screen.Home
             }
         )
@@ -89,6 +101,7 @@ fun FuturisApp() {
     var userEmail by remember { mutableStateOf(savedEmail) }
     var userDateOfBirth by remember { mutableStateOf(savedDateOfBirth) }
     var userGender by remember { mutableStateOf(savedGender) }
+    var profileImageUri by remember { mutableStateOf(savedProfileImageUri) }
     var userId by remember { mutableStateOf(savedUserId) }
     var notificationsEnabled by remember { mutableStateOf(savedNotificationsEnabled) }
     var insightReminders by remember { mutableStateOf(savedInsightReminders) }
@@ -96,9 +109,20 @@ fun FuturisApp() {
     when (currentScreen) {
         Screen.Splash -> SplashScreen(
             onDone = {
+                val currentSavedLogin = prefs.getBoolean("isLoggedIn", false)
+                val currentSavedEmail = prefs.getString("email", "alex@email.com") ?: "alex@email.com"
+                val currentSavedUserId =
+                    prefs.getString("userId", currentSavedEmail)?.ifBlank { currentSavedEmail }
+                        ?: currentSavedEmail
+
+                val onboardingFinished = OnboardingStateManager.isOnboardingFinished(
+                    context = context,
+                    userId = currentSavedUserId
+                )
+
                 currentScreen = when {
-                    !prefs.getBoolean("isLoggedIn", false) -> Screen.Login
-                    !prefs.getBoolean("isBaseQuizCompleted", false) -> Screen.Quiz
+                    !currentSavedLogin -> Screen.Login
+                    !onboardingFinished -> Screen.Quiz
                     else -> Screen.Home
                 }
             }
@@ -107,11 +131,14 @@ fun FuturisApp() {
         Screen.Login -> LoginScreen(
             onGoSignup = { currentScreen = Screen.Signup },
             onForgotPassword = { currentScreen = Screen.ResetPassword },
-            onLoginSuccess = { username, firstName, lastName, email ->
+            onGoEmailVerification = { currentScreen = Screen.EmailVerification },
+            onLoginSuccess = { username, firstName, lastName, email, dateOfBirth, gender ->
                 userUsername = if (username.isNotBlank()) username else "User"
                 userFirstName = firstName
                 userLastName = lastName
                 userEmail = email
+                userDateOfBirth = dateOfBirth
+                userGender = gender
                 userId = email.ifBlank { "default_user" }
 
                 prefs.edit()
@@ -120,33 +147,39 @@ fun FuturisApp() {
                     .putString("firstName", userFirstName)
                     .putString("lastName", userLastName)
                     .putString("email", userEmail)
+                    .putString("dateOfBirth", userDateOfBirth)
+                    .putString("gender", userGender)
                     .putString("userId", userId)
                     .apply()
 
-                val isBaseQuizCompleted =
-                    prefs.getBoolean("isBaseQuizCompleted", false)
+                val onboardingFinished = OnboardingStateManager.isOnboardingFinished(
+                    context = context,
+                    userId = userId
+                )
 
-                currentScreen =
-                    if (isBaseQuizCompleted) Screen.Home else Screen.Quiz
+                currentScreen = if (onboardingFinished) Screen.Home else Screen.Quiz
             }
         )
 
         Screen.Signup -> SignupScreen(
-            onGoLogin = { currentScreen = Screen.Login }
+            onGoLogin = { currentScreen = Screen.Login },
+            onGoEmailVerification = { currentScreen = Screen.EmailVerification }
         )
 
         Screen.ResetPassword -> ResetPasswordScreen(
-            onContinue = { currentScreen = Screen.EmailVerification },
+            onContinue = { currentScreen = Screen.Login },
             onBackToLogin = { currentScreen = Screen.Login }
         )
 
         Screen.EmailVerification -> EmailVerificationScreen(
-            onVerify = { currentScreen = Screen.CreateNewPassword },
-            onResend = { }
+            onVerified = { currentScreen = Screen.Login },
+            onGoLogin = { currentScreen = Screen.Login }
         )
 
         Screen.CreateNewPassword -> CreateNewPasswordScreen(
-            onResetDone = { currentScreen = Screen.Login }
+            currentEmail = userEmail,
+            onResetDone = { currentScreen = Screen.AccountInformation },
+            onBackClick = { currentScreen = Screen.PrivacySecurity }
         )
 
         Screen.Home -> HomeScreen(
@@ -182,6 +215,24 @@ fun FuturisApp() {
                 currentScreen = Screen.Home
             },
             onQuizFinished = {
+                OnboardingStateManager.setQuizCompleted(
+                    context = context,
+                    userId = userId,
+                    completed = true
+                )
+
+                OnboardingStateManager.setFirstInsightGenerated(
+                    context = context,
+                    userId = userId,
+                    generated = true
+                )
+
+                OnboardingStateManager.setOnboardingFinished(
+                    context = context,
+                    userId = userId,
+                    finished = true
+                )
+
                 prefs.edit()
                     .putBoolean("isBaseQuizCompleted", true)
                     .apply()
@@ -300,6 +351,7 @@ fun FuturisApp() {
             firstName = if (userFirstName.isNotBlank()) userFirstName else userUsername,
             lastName = userLastName,
             email = userEmail,
+            profileImageUri = profileImageUri,
             currentTab = "profile",
             onTabSelected = { tab ->
                 when (tab) {
@@ -312,6 +364,15 @@ fun FuturisApp() {
             onOpenAccountInformation = {
                 currentScreen = Screen.AccountInformation
             },
+            onOpenNotificationPreferences = {
+                currentScreen = Screen.NotificationPreferences
+            },
+            onOpenPrivacySecurity = {
+                currentScreen = Screen.PrivacySecurity
+            },
+            onOpenHelpSupport = {
+                currentScreen = Screen.HelpSupport
+            },
             onLogout = {
                 prefs.edit().clear().apply()
 
@@ -323,6 +384,7 @@ fun FuturisApp() {
                 userEmail = "alex@email.com"
                 userDateOfBirth = ""
                 userGender = ""
+                profileImageUri = ""
                 userId = "default_user"
                 notificationsEnabled = true
                 insightReminders = true
@@ -339,7 +401,8 @@ fun FuturisApp() {
                 dateOfBirth = userDateOfBirth,
                 gender = userGender,
                 notificationsEnabled = notificationsEnabled,
-                insightReminders = insightReminders
+                insightReminders = insightReminders,
+                profileImageUri = profileImageUri
             ),
             onBackClick = {
                 currentScreen = Screen.Profile
@@ -348,9 +411,9 @@ fun FuturisApp() {
                 userFirstName = updatedData.firstName
                 userLastName = updatedData.lastName
                 userUsername = updatedData.username
-                userEmail = updatedData.email
                 notificationsEnabled = updatedData.notificationsEnabled
                 insightReminders = updatedData.insightReminders
+                profileImageUri = updatedData.profileImageUri
 
                 prefs.edit()
                     .putString("firstName", userFirstName)
@@ -360,13 +423,41 @@ fun FuturisApp() {
                     .putString("userId", userId)
                     .putBoolean("notificationsEnabled", notificationsEnabled)
                     .putBoolean("insightReminders", insightReminders)
+                    .putString("profileImageUri", profileImageUri)
                     .apply()
-            },
-            onChangePhotoClick = {
+
+                currentScreen = Screen.Profile
             },
             onChangePasswordClick = {
-                currentScreen = Screen.ResetPassword
+                currentScreen = Screen.CreateNewPassword
             }
+        )
+
+        Screen.NotificationPreferences -> NotificationPreferencesScreen(
+            notificationsEnabled = notificationsEnabled,
+            insightReminders = insightReminders,
+            onBackClick = { currentScreen = Screen.Profile },
+            onSaveClick = { newNotificationsEnabled, newInsightReminders ->
+                notificationsEnabled = newNotificationsEnabled
+                insightReminders = newInsightReminders
+
+                prefs.edit()
+                    .putBoolean("notificationsEnabled", notificationsEnabled)
+                    .putBoolean("insightReminders", insightReminders)
+                    .apply()
+
+                currentScreen = Screen.Profile
+            }
+        )
+
+        Screen.PrivacySecurity -> PrivacySecurityScreen(
+            email = userEmail,
+            onBackClick = { currentScreen = Screen.Profile },
+            onChangePasswordClick = { currentScreen = Screen.CreateNewPassword }
+        )
+
+        Screen.HelpSupport -> HelpSupportScreen(
+            onBackClick = { currentScreen = Screen.Profile }
         )
     }
 }

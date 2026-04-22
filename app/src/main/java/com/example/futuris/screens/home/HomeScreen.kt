@@ -1,5 +1,6 @@
 package com.example.futuris.screens.home
 
+import android.content.Context
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -30,6 +31,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,12 +40,19 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.futuris.R
+import com.example.futuris.data.AlertItem
+import com.example.futuris.data.AlertMemoryStore
+import com.example.futuris.data.OnboardingStateManager
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 data class HomeCategory(
     val title: String,
@@ -65,6 +74,24 @@ fun HomeScreen(
     onTabSelected: (String) -> Unit,
     onDestinyQuizClick: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+
+    val prefs = remember {
+        context.getSharedPreferences("FuturisPrefs", Context.MODE_PRIVATE)
+    }
+
+    val userId = remember {
+        prefs.getString("userId", "")?.trim().orEmpty()
+            .ifBlank { "default_user" }
+    }
+
+    val isQuizCompleted = remember(userId) {
+        OnboardingStateManager.isOnboardingFinished(
+            context = context,
+            userId = userId
+        )
+    }
+
     val safeFirstName = firstName.trim().ifBlank { "Alex" }
 
     val categories = remember {
@@ -85,6 +112,27 @@ fun HomeScreen(
             BottomTabItem("Alerts", "alerts", R.drawable.nav_alerts),
             BottomTabItem("Profile", "profile", R.drawable.nav_profile)
         )
+    }
+
+    LaunchedEffect(Unit) {
+        val todayKey = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        val lastDailyAlertDate = prefs.getString("last_daily_alert_date", "") ?: ""
+
+        if (lastDailyAlertDate != todayKey) {
+            AlertMemoryStore.addAlert(
+                context = context,
+                alert = AlertItem(
+                    id = System.currentTimeMillis().toString(),
+                    title = "New Daily Signals",
+                    message = "Fresh predictions are waiting for you.",
+                    timeLabel = "Now",
+                    category = "system",
+                    isNew = true
+                )
+            )
+
+            prefs.edit().putString("last_daily_alert_date", todayKey).apply()
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -144,7 +192,10 @@ fun HomeScreen(
                 }
 
                 item(span = { GridItemSpan(2) }) {
-                    DestinyQuizCard(onClick = onDestinyQuizClick)
+                    DestinyQuizCard(
+                        onClick = onDestinyQuizClick,
+                        isQuizCompleted = isQuizCompleted
+                    )
                 }
             }
 
@@ -214,21 +265,29 @@ fun CategoryCard(
 }
 
 @Composable
-fun DestinyQuizCard(onClick: () -> Unit) {
+fun DestinyQuizCard(
+    onClick: () -> Unit,
+    isQuizCompleted: Boolean
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(22.dp))
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Color(0x772E0C52), Color(0x99310C56))
+                    colors = listOf(
+                        Color(0x772E0C52),
+                        Color(0x99310C56)
+                    )
                 )
             )
             .border(
                 BorderStroke(1.dp, Color(0x88C68CFF)),
                 shape = RoundedCornerShape(22.dp)
             )
-            .clickable { onClick() }
+            .clickable(enabled = !isQuizCompleted) {
+                onClick()
+            }
             .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {
         Column {
@@ -255,7 +314,11 @@ fun DestinyQuizCard(onClick: () -> Unit) {
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = "Let Futuris guide your future\nthrough questions",
+                        text = if (isQuizCompleted) {
+                            "Your core signals are already unlocked.\nNo need to retake the quiz."
+                        } else {
+                            "Let Futuris guide your future\nthrough questions"
+                        },
                         color = Color(0xFFE6D7F6),
                         fontSize = 13.sp,
                         lineHeight = 18.sp
@@ -265,22 +328,51 @@ fun DestinyQuizCard(onClick: () -> Unit) {
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            Button(
-                onClick = onClick,
-                shape = RoundedCornerShape(50),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF7B4BD0),
-                    contentColor = Color.White
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(46.dp)
-            ) {
-                Text(
-                    text = "Start Prediction",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
+            if (isQuizCompleted) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(46.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(
+                            Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color(0xFF54505F),
+                                    Color(0xFF6B6577)
+                                )
+                            )
+                        )
+                        .border(
+                            BorderStroke(1.dp, Color(0x66FFFFFF)),
+                            RoundedCornerShape(50)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "🔒 Quiz Completed",
+                        color = Color.White,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            } else {
+                Button(
+                    onClick = onClick,
+                    shape = RoundedCornerShape(50),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF7B4BD0),
+                        contentColor = Color.White
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(46.dp)
+                ) {
+                    Text(
+                        text = "Start Prediction",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
         }
     }

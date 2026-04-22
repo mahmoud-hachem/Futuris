@@ -1,17 +1,14 @@
 package com.example.futuris.screens.categories
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.navigationBarsPadding
+
 import android.content.Context
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,42 +16,46 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.futuris.R
+import com.example.futuris.data.AlertItem
+import com.example.futuris.data.AlertMemoryStore
 import com.example.futuris.data.ChatMemoryStore
+import com.example.futuris.data.OnboardingStateManager
 import com.example.futuris.data.OnlineInsightManager
 import com.example.futuris.data.QuizMemoryStore
+import com.example.futuris.model.QuizAnswer
 import com.example.futuris.screens.home.BottomTabItem
 import com.example.futuris.screens.home.GlassBottomBar
+import kotlinx.coroutines.launch
 
 @Suppress("UNUSED_PARAMETER")
 @Composable
@@ -65,6 +66,7 @@ fun CareerScreen(
     onQuestionClick: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     val prefs = remember {
         context.getSharedPreferences("FuturisPrefs", Context.MODE_PRIVATE)
@@ -112,40 +114,99 @@ fun CareerScreen(
             .ifBlank { "12/12/2000" }
     }
 
+    val onboardingFinished = remember(userId) {
+        OnboardingStateManager.isOnboardingFinished(
+            context = context,
+            userId = userId
+        )
+    }
+
     val quizAnswers = remember(userId) {
         QuizMemoryStore.getAnswers(userId)
     }
 
-    val chatMessages = remember {
+    val baseChatMessages = remember {
         ChatMemoryStore.getMessages()
     }
 
     var finalText by remember {
-        mutableStateOf("Reading your career signals...")
+        mutableStateOf("Reading your career energy...")
     }
 
-    LaunchedEffect(userId, savedFirstName, savedDateOfBirth, quizAnswers, chatMessages) {
-        val response = OnlineInsightManager.generateCategoryInsight(
-            userId = userId,
-            firstName = savedFirstName,
-            lastName = savedLastName,
-            username = savedUsername,
-            email = savedEmail,
-            gender = savedGender,
-            dateOfBirth = savedDateOfBirth,
-            category = "career",
-            lifeFocus = savedLifeFocus,
-            state = savedState,
-            intent = savedIntent,
-            quizAnswers = quizAnswers,
-            chatMessages = chatMessages
-        )
+    var isLoading by remember {
+        mutableStateOf(true)
+    }
 
-        finalText = if (response.insight.isNotBlank()) {
-            response.insight
-        } else {
-            "Your career energy is forming quietly. Keep moving with patience and consistency."
+    var selectedQuestion by remember {
+        mutableStateOf("")
+    }
+
+    val generatedQuestions = remember {
+        mutableStateListOf<String>()
+    }
+
+    LaunchedEffect(
+        userId,
+        savedFirstName,
+        savedDateOfBirth,
+        quizAnswers,
+        baseChatMessages,
+        onboardingFinished
+    ) {
+        isLoading = true
+        selectedQuestion = ""
+        generatedQuestions.clear()
+
+        if (!onboardingFinished) {
+            finalText =
+                "I predicted this moment... you opened Career & Studies before revealing your first 5 signals. " +
+                        "My crystal is blinking, but the real vision stays locked until you complete the Destiny Quiz."
+            isLoading = false
+            return@LaunchedEffect
         }
+
+        finalText = "Reading your career energy..."
+
+        try {
+            val response = OnlineInsightManager.generateCategoryInsight(
+                userId = userId,
+                firstName = savedFirstName,
+                lastName = savedLastName,
+                username = savedUsername,
+                email = savedEmail,
+                gender = savedGender,
+                dateOfBirth = savedDateOfBirth,
+                category = "career",
+                lifeFocus = savedLifeFocus,
+                state = savedState,
+                intent = savedIntent,
+                quizAnswers = quizAnswers,
+                chatMessages = baseChatMessages
+            )
+
+            if (response.success && response.insight.isNotBlank()) {
+                finalText = response.insight
+                generatedQuestions.addAll(cleanQuestions(response.questions))
+
+                AlertMemoryStore.addAlert(
+                    context = context,
+                    alert = AlertItem(
+                        id = System.currentTimeMillis().toString(),
+                        title = "Career Signal Updated",
+                        message = "A new career insight has been generated.",
+                        timeLabel = "Now",
+                        category = "career",
+                        isNew = true
+                    )
+                )
+            } else {
+                finalText = "Live insight is unavailable right now. Please try again."
+            }
+        } catch (e: Exception) {
+            finalText = "Live insight is unavailable right now. Please try again."
+        }
+
+        isLoading = false
     }
 
     Box(
@@ -154,92 +215,166 @@ fun CareerScreen(
             .statusBarsPadding()
             .navigationBarsPadding()
     ) {
-        CareerScreenBackground(
-            modifier = Modifier.fillMaxSize()
-        )
+        CareerBackground()
 
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 94.dp)
+                .padding(horizontal = 18.dp)
+                .padding(bottom = 92.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "Career & Studies",
-                color = Color.White,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 14.dp)
-            )
+            Spacer(modifier = Modifier.height(10.dp))
 
             Box(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(start = 16.dp, top = 8.dp)
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(Color(0x26FFFFFF))
-                    .border(
-                        BorderStroke(1.dp, Color(0x55FFFFFF)),
-                        CircleShape
-                    )
-                    .clickable { onBackClick() },
-                contentAlignment = Alignment.Center
+                modifier = Modifier.fillMaxWidth()
             ) {
+                CareerBackButton(
+                    modifier = Modifier.align(Alignment.CenterStart),
+                    onClick = onBackClick
+                )
+
                 Text(
-                    text = "←",
+                    text = "Career & Studies",
                     color = Color.White,
-                    fontSize = 18.sp
+                    fontSize = 29.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(top = 6.dp)
                 )
             }
 
-            BoxWithConstraints(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = 68.dp, start = 18.dp, end = 18.dp, bottom = 8.dp)
-            ) {
-                val genieHeight = if (maxHeight < 700.dp) 118.dp else 138.dp
+            Spacer(modifier = Modifier.height(28.dp))
 
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    CareerGenieHero(
-                        genieHeight = genieHeight
+            CareerCenterImage()
+
+            Spacer(modifier = Modifier.height(22.dp))
+
+            CareerPredictionCard(
+                text = finalText,
+                isLoading = isLoading,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            if (!onboardingFinished) {
+                LockedCategoryHint(
+                    text = "Complete the Destiny Quiz to unlock your real career prediction.",
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(18.dp))
+            }
+
+            if (onboardingFinished && !isLoading && generatedQuestions.isNotEmpty()) {
+                QuestionsSectionTitle()
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                generatedQuestions.forEach { question ->
+                    QuestionChip(
+                        text = question,
+                        isSelected = selectedQuestion == question,
+                        borderColor = Color(0xFFEAA6FF),
+                        glowColor = Color(0x44C56BFF),
+                        onClick = {
+                            selectedQuestion = question
+                            onQuestionClick(question)
+
+                            scope.launch {
+                                val previousInsight = finalText
+
+                                try {
+                                    isLoading = true
+                                    finalText = "Wait for your new insight..."
+                                    generatedQuestions.clear()
+
+                                    val followUpChatMessages = buildList {
+                                        addAll(baseChatMessages)
+                                        add("Previous career insight: $previousInsight")
+                                        add("Selected follow-up question: $question")
+                                        add(
+                                            "Generate a NEW and DIFFERENT career insight based on the selected question. " +
+                                                    "Do not repeat the previous insight. " +
+                                                    "Do not mention the user's name. " +
+                                                    "Answer in 2 to 4 sentences only. " +
+                                                    "Also generate exactly two new follow-up questions."
+                                        )
+                                    }
+
+                                    val followUpQuizAnswers = buildFollowUpQuizAnswers(
+                                        originalAnswers = quizAnswers,
+                                        selectedQuestion = question,
+                                        previousInsight = previousInsight,
+                                        categoryKey = "career"
+                                    )
+
+                                    val followUpResponse =
+                                        OnlineInsightManager.generateCategoryInsight(
+                                            userId = userId,
+                                            firstName = savedFirstName,
+                                            lastName = savedLastName,
+                                            username = savedUsername,
+                                            email = savedEmail,
+                                            gender = savedGender,
+                                            dateOfBirth = savedDateOfBirth,
+                                            category = "career",
+                                            lifeFocus = savedLifeFocus,
+                                            state = savedState,
+                                            intent = mergeIntentWithQuestion(
+                                                currentIntent = savedIntent,
+                                                question = question,
+                                                previousInsight = previousInsight,
+                                                categoryLabel = "Career"
+                                            ),
+                                            quizAnswers = followUpQuizAnswers,
+                                            chatMessages = followUpChatMessages
+                                        )
+
+                                    if (followUpResponse.success && followUpResponse.insight.isNotBlank()) {
+                                        finalText = followUpResponse.insight
+                                        generatedQuestions.addAll(
+                                            cleanQuestions(followUpResponse.questions)
+                                        )
+
+                                        AlertMemoryStore.addAlert(
+                                            context = context,
+                                            alert = AlertItem(
+                                                id = System.currentTimeMillis().toString(),
+                                                title = "Career Follow-Up Ready",
+                                                message = "A deeper career insight has been unlocked.",
+                                                timeLabel = "Now",
+                                                category = "career",
+                                                isNew = true
+                                            )
+                                        )
+                                    } else {
+                                        finalText = "Live insight is unavailable right now. Please try again."
+                                    }
+                                } catch (e: Exception) {
+                                    finalText = "Live insight is unavailable right now. Please try again."
+                                }
+
+                                isLoading = false
+                            }
+                        }
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = "Current momentum reading",
-                        color = Color(0xDDEEE5FF),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        letterSpacing = 0.3.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    StarDivider()
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    CareerInsightCard(
-                        text = finalText,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                    )
+                    Spacer(modifier = Modifier.height(10.dp))
                 }
             }
+
+            Spacer(modifier = Modifier.height(18.dp))
         }
 
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(horizontal = 20.dp, vertical = 10.dp)
+                .padding(horizontal = 18.dp, vertical = 10.dp)
         ) {
             GlassBottomBar(
                 selectedTab = currentTab,
@@ -256,12 +391,8 @@ fun CareerScreen(
 }
 
 @Composable
-private fun CareerScreenBackground(
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-    ) {
+private fun CareerBackground() {
+    Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = R.drawable.home_bg),
             contentDescription = null,
@@ -275,80 +406,46 @@ private fun CareerScreenBackground(
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            Color(0xA8140827),
-                            Color(0x6E220B40),
-                            Color(0xBF11061D)
+                            Color(0xCC14051F),
+                            Color(0xAA1E0632),
+                            Color(0xD40E0418)
                         )
                     )
                 )
         )
 
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val sparkles = listOf(
-                Offset(size.width * 0.10f, size.height * 0.12f),
-                Offset(size.width * 0.18f, size.height * 0.20f),
-                Offset(size.width * 0.27f, size.height * 0.31f),
-                Offset(size.width * 0.82f, size.height * 0.17f),
-                Offset(size.width * 0.89f, size.height * 0.27f),
-                Offset(size.width * 0.14f, size.height * 0.46f),
-                Offset(size.width * 0.90f, size.height * 0.52f),
-                Offset(size.width * 0.22f, size.height * 0.66f),
-                Offset(size.width * 0.72f, size.height * 0.73f),
-                Offset(size.width * 0.87f, size.height * 0.80f)
-            )
-
-            sparkles.forEachIndexed { index, point ->
-                drawCircle(
-                    color = if (index % 2 == 0) Color(0xCCFFFFFF) else Color(0x99E8D2FF),
-                    radius = if (index % 3 == 0) 3.8f else 2.2f,
-                    center = point
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            Color(0x35C56BFF),
+                            Color.Transparent
+                        )
+                    )
                 )
-            }
-
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color(0x354DABFF),
-                        Color.Transparent
-                    )
-                ),
-                center = Offset(size.width * 0.18f, size.height * 0.72f),
-                radius = size.minDimension * 0.25f
-            )
-
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color(0x2CDB8CFF),
-                        Color.Transparent
-                    )
-                ),
-                center = Offset(size.width * 0.82f, size.height * 0.60f),
-                radius = size.minDimension * 0.18f
-            )
-        }
+        )
     }
 }
 
 @Composable
-private fun CareerGenieHero(
-    genieHeight: androidx.compose.ui.unit.Dp
-) {
+private fun CareerCenterImage() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(genieHeight + 16.dp),
+            .height(210.dp),
         contentAlignment = Alignment.Center
     ) {
         Box(
             modifier = Modifier
-                .size(genieHeight + 28.dp)
-                .blur(28.dp)
+                .size(190.dp)
+                .blur(42.dp)
                 .background(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            Color(0x665E29C9),
-                            Color(0x335841D8),
+                            Color(0x55C56BFF),
+                            Color(0x334D1E78),
                             Color.Transparent
                         )
                     ),
@@ -357,180 +454,348 @@ private fun CareerGenieHero(
         )
 
         Image(
-            painter = painterResource(id = R.drawable.futuris_genie),
-            contentDescription = "Futuris Genie",
+            painter = painterResource(id = R.drawable.card_career),
+            contentDescription = "Career category image",
             contentScale = ContentScale.Fit,
-            modifier = Modifier.height(genieHeight)
+            modifier = Modifier.size(175.dp)
         )
     }
 }
 
 @Composable
-private fun StarDivider() {
+private fun CareerPredictionCard(
+    text: String,
+    isLoading: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val scrollState = rememberScrollState()
+
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 6.dp),
-        contentAlignment = Alignment.Center
+        modifier = modifier
+            .widthIn(max = 380.dp)
+            .clip(RoundedCornerShape(26.dp))
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0x4DBE6BFF),
+                        Color(0x3D7D39D8)
+                    )
+                )
+            )
+            .border(
+                BorderStroke(1.3.dp, Color(0x88E8C7FF)),
+                RoundedCornerShape(26.dp)
+            )
+            .padding(horizontal = 14.dp, vertical = 14.dp)
     ) {
-        Canvas(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(22.dp)
-        ) {
-            val centerX = size.width / 2f
-            val lineY = size.height * 0.55f
-
-            drawLine(
-                brush = Brush.horizontalGradient(
-                    colors = listOf(
-                        Color.Transparent,
-                        Color(0x55FFFFFF),
-                        Color(0x88E4D1FF),
-                        Color(0x55FFFFFF),
-                        Color.Transparent
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(
+                                    Color(0xFFFF9AF2),
+                                    Color(0xFF7D38D6),
+                                    Color(0xFF34124F)
+                                )
+                            )
+                        )
+                        .border(
+                            BorderStroke(1.dp, Color(0x99FFFFFF)),
+                            CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "✦",
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
                     )
-                ),
-                start = Offset(0f, lineY),
-                end = Offset(size.width, lineY),
-                strokeWidth = 2.2f
-            )
+                }
 
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color.White,
-                        Color(0xFFD7BCFF),
-                        Color.Transparent
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(horizontal = 50.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Your Career Prediction",
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
                     )
-                ),
-                radius = 8f,
-                center = Offset(centerX, lineY)
-            )
 
-            drawLine(
-                color = Color(0x66FFFFFF),
-                start = Offset(centerX, lineY - 8f),
-                end = Offset(centerX, lineY + 8f),
-                strokeWidth = 1.8f
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(165.dp)
+                            .verticalScroll(scrollState),
+                        contentAlignment = Alignment.TopCenter
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            if (isLoading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(28.dp),
+                                    color = Color.White,
+                                    strokeWidth = 2.6.dp
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                            }
+
+                            Text(
+                                text = text,
+                                color = Color(0xFFF3EFFF),
+                                fontSize = 16.sp,
+                                lineHeight = 24.sp,
+                                fontWeight = FontWeight.Medium,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LockedCategoryHint(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(
+                Brush.horizontalGradient(
+                    colors = listOf(
+                        Color(0x33230A37),
+                        Color(0x55311655),
+                        Color(0x33230A37)
+                    )
+                )
+            )
+            .border(
+                BorderStroke(1.dp, Color(0x77EAA6FF)),
+                RoundedCornerShape(20.dp)
+            )
+            .padding(horizontal = 14.dp, vertical = 14.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(26.dp)
+                    .clip(CircleShape)
+                    .background(Color(0x44C56BFF)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "👁",
+                    fontSize = 13.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.size(10.dp))
+
+            Text(
+                text = text,
+                color = Color(0xFFF3EFFF),
+                fontSize = 13.sp,
+                lineHeight = 19.sp,
+                fontWeight = FontWeight.Medium
             )
         }
     }
 }
 
 @Composable
-private fun CareerInsightCard(
-    text: String,
-    modifier: Modifier = Modifier
+private fun CareerBackButton(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
 ) {
-    val scrollState = rememberScrollState()
-    var cardSize by remember { mutableStateOf(IntSize.Zero) }
+    Box(
+        modifier = modifier.size(46.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(54.dp)
+                .blur(18.dp)
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            Color(0x55C56BFF),
+                            Color(0x224D1E78),
+                            Color.Transparent
+                        )
+                    ),
+                    shape = CircleShape
+                )
+        )
+
+        Box(
+            modifier = Modifier
+                .size(42.dp)
+                .clip(CircleShape)
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFF6F2BCB),
+                            Color(0xFF3E136C)
+                        )
+                    )
+                )
+                .border(
+                    BorderStroke(1.dp, Color(0x99FFFFFF)),
+                    CircleShape
+                )
+                .clickable { onClick() },
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "←",
+                color = Color.White,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
+private fun QuestionsSectionTitle() {
+    Text(
+        text = "Popular Questions",
+        color = Color.White,
+        fontSize = 18.sp,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+@Composable
+private fun QuestionChip(
+    text: String,
+    isSelected: Boolean,
+    borderColor: Color,
+    glowColor: Color,
+    onClick: () -> Unit
+) {
+    val finalBorder = if (isSelected) borderColor else Color(0x99D2A4FF)
 
     Box(
-        modifier = modifier
-            .widthIn(max = 380.dp)
-            .clip(RoundedCornerShape(30.dp))
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
             .background(
-                brush = Brush.verticalGradient(
+                Brush.horizontalGradient(
                     colors = listOf(
-                        Color(0xEEF4F0FF),
-                        Color(0xEAEFFCFF),
-                        Color(0xE7EEFFFF)
+                        Color(0x402B083E),
+                        Color(0x553A1465),
+                        Color(0x4021063A)
                     )
                 )
             )
             .border(
-                BorderStroke(1.dp, Color(0x90FFFFFF)),
-                RoundedCornerShape(30.dp)
+                BorderStroke(1.1.dp, finalBorder),
+                RoundedCornerShape(24.dp)
             )
-            .onSizeChanged { cardSize = it }
+            .clickable { onClick() }
+            .padding(horizontal = 14.dp, vertical = 14.dp)
     ) {
-        if (cardSize != IntSize.Zero) {
-            Canvas(modifier = Modifier.matchParentSize()) {
-                drawRoundRect(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            Color(0x30A28BFF),
-                            Color.Transparent
-                        ),
-                        center = Offset(size.width * 0.85f, size.height * 0.10f),
-                        radius = size.minDimension * 0.60f
-                    ),
-                    cornerRadius = CornerRadius(30.dp.toPx(), 30.dp.toPx()),
-                    style = Fill
-                )
-
-                drawRoundRect(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            Color(0x22FFFFFF),
-                            Color.Transparent
-                        ),
-                        center = Offset(size.width * 0.15f, size.height * 0.07f),
-                        radius = size.minDimension * 0.45f
-                    ),
-                    cornerRadius = CornerRadius(30.dp.toPx(), 30.dp.toPx()),
-                    style = Fill
-                )
-            }
-        }
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Oracle Insight",
-                color = Color(0xFF4B2A7A),
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.4.sp
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = "Live reading from your current signals",
-                color = Color(0xCC6F5A98),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(22.dp))
-                    .background(Color(0x20FFFFFF))
-                    .border(
-                        BorderStroke(1.dp, Color(0x35FFFFFF)),
-                        RoundedCornerShape(22.dp)
-                    )
-                    .padding(horizontal = 14.dp, vertical = 14.dp)
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(if (isSelected) glowColor else Color(0x22C57BFF)),
+                contentAlignment = Alignment.Center
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(scrollState),
-                    verticalArrangement = Arrangement.Top,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = text,
-                        color = Color(0xFF32215F),
-                        fontSize = 14.sp,
-                        lineHeight = 23.sp,
-                        textAlign = TextAlign.Center,
-                        fontWeight = FontWeight.Medium
-                    )
-
-                    Spacer(modifier = Modifier.height(10.dp))
-                }
+                Text(
+                    text = "✦",
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
+
+            Spacer(modifier = Modifier.size(12.dp))
+
+            Text(
+                text = text,
+                color = Color.White,
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
+                modifier = Modifier.weight(1f)
+            )
+
+            Spacer(modifier = Modifier.size(8.dp))
+
+            Text(
+                text = "➜",
+                color = Color(0xFFEBC8FF),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
+}
+
+private fun buildFollowUpQuizAnswers(
+    originalAnswers: List<QuizAnswer>,
+    selectedQuestion: String,
+    previousInsight: String,
+    categoryKey: String
+): List<QuizAnswer> {
+    return originalAnswers +
+            QuizAnswer(
+                questionId = "${categoryKey}_follow_up_question",
+                selectedOptionText = selectedQuestion
+            ) +
+            QuizAnswer(
+                questionId = "${categoryKey}_previous_insight",
+                selectedOptionText = previousInsight
+            )
+}
+
+private fun mergeIntentWithQuestion(
+    currentIntent: String,
+    question: String,
+    previousInsight: String,
+    categoryLabel: String
+): String {
+    val base = currentIntent.trim()
+
+    val followUpBlock =
+        "$categoryLabel follow-up requested. " +
+                "Selected question: $question. " +
+                "Previous insight: $previousInsight. " +
+                "Generate a new and different follow-up insight without repeating the previous wording. " +
+                "Also generate exactly two fresh follow-up questions."
+
+    return if (base.isBlank()) {
+        followUpBlock
+    } else {
+        "$base | $followUpBlock"
+    }
+}
+
+private fun cleanQuestions(questions: List<String>): List<String> {
+    return questions
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+        .distinct()
+        .take(2)
 }

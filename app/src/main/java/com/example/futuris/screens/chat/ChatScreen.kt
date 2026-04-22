@@ -1,5 +1,13 @@
 package com.example.futuris.screens.chat
-
+import androidx.compose.foundation.layout.width
+import android.content.Context
+import android.widget.Toast
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -28,18 +36,23 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.futuris.R
+import com.example.futuris.data.AlertItem
+import com.example.futuris.data.AlertMemoryStore
 import com.example.futuris.data.ChatMemoryStore
 import com.example.futuris.screens.home.BottomTabItem
 import com.example.futuris.screens.home.GlassBottomBar
@@ -48,10 +61,11 @@ import okhttp3.Callback
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.io.IOException
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody.Companion.toRequestBody
+import java.util.concurrent.TimeUnit
 
 data class ChatMessage(
     val text: String,
@@ -64,13 +78,58 @@ fun ChatScreen(
     currentTab: String,
     onTabSelected: (String) -> Unit
 ) {
-    val safeFirstName = firstName.trim().ifBlank { "User" }
+    val context = LocalContext.current
+
+    val prefs = remember {
+        context.getSharedPreferences("FuturisPrefs", Context.MODE_PRIVATE)
+    }
 
     var message by remember { mutableStateOf("") }
+    var isWaitingForReply by remember { mutableStateOf(false) }
 
-    val messages = remember { mutableStateListOf<ChatMessage>() }
+    val hiddenSystemMessages = remember {
+        setOf(
+            "Error connecting to server",
+            "Connecting to Futuris AI...",
+            "Futuris AI is taking a little longer than expected. Please try again in a few seconds.",
+            "I’m here, but I couldn’t generate a response right now.",
+            "I’m here, but I couldn’t generate a response right now. Please try again.",
+            "Server error: check API or quota"
+        )
+    }
 
-    val client = remember { OkHttpClient() }
+    val messages = remember {
+        val cleanedStoredMessages = ChatMemoryStore.getStructuredMessages()
+            .filterNot { it.text.trim() in hiddenSystemMessages }
+            .map {
+                ChatMessage(
+                    text = it.text,
+                    isUser = it.isUser
+                )
+            }
+
+        mutableStateListOf<ChatMessage>().apply {
+            addAll(cleanedStoredMessages)
+
+            if (isEmpty()) {
+                val welcomeMessage = "Hello! How can I assist you today?"
+                add(ChatMessage(welcomeMessage, false))
+                ChatMemoryStore.addMessage(
+                    text = welcomeMessage,
+                    isUser = false
+                )
+            }
+        }
+    }
+
+    val client = remember {
+        OkHttpClient.Builder()
+            .connectTimeout(20, TimeUnit.SECONDS)
+            .readTimeout(45, TimeUnit.SECONDS)
+            .writeTimeout(20, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true)
+            .build()
+    }
 
     val tabs = remember {
         listOf(
@@ -79,6 +138,106 @@ fun ChatScreen(
             BottomTabItem("Alerts", "alerts", R.drawable.nav_alerts),
             BottomTabItem("Profile", "profile", R.drawable.nav_profile)
         )
+    }
+
+    fun addAssistantMessage(text: String) {
+        messages.add(ChatMessage(text = text, isUser = false))
+        ChatMemoryStore.addMessage(
+            text = text,
+            isUser = false
+        )
+    }
+
+    fun requestAssistantReply(
+        userMessage: String,
+        maxRetries: Int = 1
+    ) {
+        isWaitingForReply = true
+
+        fun makeAttempt(attemptIndex: Int) {
+            val json = JSONObject().apply {
+                put("message", userMessage)
+            }
+
+            val body = json.toString()
+                .toRequestBody("application/json".toMediaType())
+
+            val request = Request.Builder()
+                .url("https://futuris-backend-signup.onrender.com/chat")
+                .post(body)
+                .build()
+
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    Snapshot.withMutableSnapshot {
+                        if (attemptIndex < maxRetries) {
+                            makeAttempt(attemptIndex + 1)
+                        } else {
+                            isWaitingForReply = false
+                            Toast.makeText(
+                                context,
+                                "Please try again.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    val responseText = response.body?.string().orEmpty()
+
+                    val reply = try {
+                        if (!response.isSuccessful) {
+                            throw Exception("Server returned ${response.code}")
+                        }
+
+                        JSONObject(responseText).optString(
+                            "reply",
+                            ""
+                        ).trim()
+                    } catch (e: Exception) {
+                        ""
+                    }
+
+                    Snapshot.withMutableSnapshot {
+                        if (reply.isNotBlank()) {
+                            addAssistantMessage(reply)
+
+                            val chatInsightAlertShown =
+                                prefs.getBoolean("chat_insight_alert_shown", false)
+
+                            if (!chatInsightAlertShown) {
+                                AlertMemoryStore.addAlert(
+                                    context = context,
+                                    alert = AlertItem(
+                                        id = System.currentTimeMillis().toString(),
+                                        title = "New Insight from Chat",
+                                        message = "Your recent conversation unlocked fresh signals.",
+                                        timeLabel = "Now",
+                                        category = "chat",
+                                        isNew = true
+                                    )
+                                )
+
+                                prefs.edit()
+                                    .putBoolean("chat_insight_alert_shown", true)
+                                    .apply()
+                            }
+                        } else {
+                            Toast.makeText(
+                                context,
+                                "Please try again.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+
+                        isWaitingForReply = false
+                    }
+                }
+            })
+        }
+
+        makeAttempt(0)
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -112,7 +271,7 @@ fun ChatScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "Futuris AI",
+                text = "AI",
                 color = Color.White,
                 fontSize = 30.sp,
                 fontWeight = FontWeight.Bold
@@ -132,6 +291,13 @@ fun ChatScreen(
                 modifier = Modifier.weight(1f),
                 reverseLayout = true
             ) {
+                if (isWaitingForReply) {
+                    item {
+                        TypingBubble()
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
+
                 items(messages.reversed()) { msg ->
                     ChatBubble(msg)
                     Spacer(modifier = Modifier.height(8.dp))
@@ -140,51 +306,20 @@ fun ChatScreen(
 
             ChatInputBar(
                 value = message,
+                isEnabled = !isWaitingForReply,
                 onValueChange = { message = it },
                 onSendClick = {
-                    if (message.isNotBlank()) {
+                    if (message.isNotBlank() && !isWaitingForReply) {
                         val userMessage = message.trim()
 
-                        messages.add(ChatMessage(userMessage, true))
-                        ChatMemoryStore.addMessage(userMessage)
+                        messages.add(ChatMessage(text = userMessage, isUser = true))
+                        ChatMemoryStore.addMessage(
+                            text = userMessage,
+                            isUser = true
+                        )
 
                         message = ""
-
-                        val json = JSONObject()
-                        json.put("message", userMessage)
-
-                        val body = json.toString()
-                            .toRequestBody("application/json".toMediaTypeOrNull())
-
-                        val request = Request.Builder()
-                            .url("https://futuris-backend.onrender.com/chat")
-                            .post(body)
-                            .build()
-
-                        client.newCall(request).enqueue(object : Callback {
-                            override fun onFailure(call: Call, e: IOException) {
-                                androidx.compose.runtime.snapshots.Snapshot.withMutableSnapshot {
-                                    val errorText = "Error connecting to server"
-                                    messages.add(ChatMessage(errorText, false))
-                                    ChatMemoryStore.addMessage(errorText)
-                                }
-                            }
-
-                            override fun onResponse(call: Call, response: Response) {
-                                val res = response.body?.string().orEmpty()
-
-                                val reply = try {
-                                    JSONObject(res).getString("reply")
-                                } catch (e: Exception) {
-                                    "Server error: check API or quota"
-                                }
-
-                                androidx.compose.runtime.snapshots.Snapshot.withMutableSnapshot {
-                                    messages.add(ChatMessage(reply, false))
-                                    ChatMemoryStore.addMessage(reply)
-                                }
-                            }
-                        })
+                        requestAssistantReply(userMessage)
                     }
                 }
             )
@@ -226,8 +361,109 @@ fun ChatBubble(message: ChatMessage) {
 }
 
 @Composable
+fun TypingBubble() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Start
+    ) {
+        Box(
+            modifier = Modifier
+                .background(
+                    Color(0xFF3A2A5F),
+                    RoundedCornerShape(16.dp)
+                )
+                .padding(horizontal = 14.dp, vertical = 12.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Typing",
+                    color = Color.White,
+                    fontSize = 14.sp
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                TypingDots()
+            }
+        }
+    }
+}
+
+@Composable
+fun TypingDots() {
+    val transition = rememberInfiniteTransition(label = "typing_dots")
+
+    val dot1 by transition.animateFloat(
+        initialValue = 0.25f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                durationMillis = 600,
+                easing = FastOutSlowInEasing
+            ),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dot1"
+    )
+
+    val dot2 by transition.animateFloat(
+        initialValue = 0.25f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                durationMillis = 600,
+                delayMillis = 150,
+                easing = FastOutSlowInEasing
+            ),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dot2"
+    )
+
+    val dot3 by transition.animateFloat(
+        initialValue = 0.25f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                durationMillis = 600,
+                delayMillis = 300,
+                easing = FastOutSlowInEasing
+            ),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dot3"
+    )
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Dot(alpha = dot1)
+        Spacer(modifier = Modifier.width(4.dp))
+        Dot(alpha = dot2)
+        Spacer(modifier = Modifier.width(4.dp))
+        Dot(alpha = dot3)
+    }
+}
+
+@Composable
+fun Dot(alpha: Float) {
+    Box(
+        modifier = Modifier
+            .size(6.dp)
+            .alpha(alpha)
+            .background(
+                Color(0xFFE7D8FF),
+                CircleShape
+            )
+    )
+}
+
+@Composable
 fun ChatInputBar(
     value: String,
+    isEnabled: Boolean,
     onValueChange: (String) -> Unit,
     onSendClick: () -> Unit
 ) {
@@ -255,17 +491,20 @@ fun ChatInputBar(
     ) {
         BasicTextField(
             value = value,
-            onValueChange = onValueChange,
+            onValueChange = {
+                if (isEnabled) onValueChange(it)
+            },
             singleLine = true,
+            enabled = isEnabled,
             textStyle = TextStyle(
-                color = Color.White,
+                color = if (isEnabled) Color.White else Color(0xFFBFAFD4),
                 fontSize = 15.sp
             ),
             modifier = Modifier.weight(1f),
             decorationBox = { innerTextField ->
                 if (value.isEmpty()) {
                     Text(
-                        text = "Ask Futuris something...",
+                        text = if (isEnabled) "Ask me something..." else "Futuris AI is replying...",
                         color = Color(0xFFBFAFD4),
                         fontSize = 15.sp
                     )
@@ -282,13 +521,20 @@ fun ChatInputBar(
                 .clip(CircleShape)
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFFB874FF),
-                            Color(0xFF8A4DFF)
-                        )
+                        colors = if (isEnabled) {
+                            listOf(
+                                Color(0xFFB874FF),
+                                Color(0xFF8A4DFF)
+                            )
+                        } else {
+                            listOf(
+                                Color(0xFF7E6698),
+                                Color(0xFF5E4B72)
+                            )
+                        }
                     )
                 )
-                .clickable { onSendClick() },
+                .clickable(enabled = isEnabled) { onSendClick() },
             contentAlignment = Alignment.Center
         ) {
             Text(

@@ -1,10 +1,7 @@
 package com.example.futuris.screens.profile
 
-import android.Manifest
 import android.graphics.BitmapFactory
 import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -26,23 +23,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.Logout
 import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material.icons.outlined.PersonOutline
-import androidx.compose.material.icons.outlined.PhotoLibrary
+import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material.icons.outlined.Shield
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -77,9 +67,13 @@ fun ProfileScreen(
     firstName: String,
     lastName: String,
     email: String,
+    profileImageUri: String,
     currentTab: String,
     onTabSelected: (String) -> Unit,
     onOpenAccountInformation: () -> Unit,
+    onOpenNotificationPreferences: () -> Unit,
+    onOpenPrivacySecurity: () -> Unit,
+    onOpenHelpSupport: () -> Unit,
     onLogout: () -> Unit
 ) {
     val context = LocalContext.current
@@ -87,8 +81,10 @@ fun ProfileScreen(
     val fullName = "${firstName.trim()} ${lastName.trim()}".trim().ifBlank { "Futuris User" }
     val safeEmail = email.trim().ifBlank { "email@example.com" }
 
-    var showAvatarDialog by remember { mutableStateOf(false) }
-    var profileImage by rememberSaveable { mutableStateOf<ImageBitmap?>(null) }
+    val profileImage = remember(profileImageUri) {
+        if (profileImageUri.isBlank()) null
+        else loadImageBitmapFromUri(context, Uri.parse(profileImageUri))
+    }
 
     val tabs = remember {
         listOf(
@@ -97,30 +93,6 @@ fun ProfileScreen(
             BottomTabItem("Alerts", "alerts", R.drawable.nav_alerts),
             BottomTabItem("Profile", "profile", R.drawable.nav_profile)
         )
-    }
-
-    val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicturePreview()
-    ) { bitmap ->
-        if (bitmap != null) {
-            profileImage = bitmap.asImageBitmap()
-        }
-    }
-
-    val cameraPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) {
-            cameraLauncher.launch(null)
-        }
-    }
-
-    val galleryLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        if (uri != null) {
-            profileImage = loadImageBitmapFromUri(context, uri)
-        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -170,14 +142,14 @@ fun ProfileScreen(
                         fullName = fullName,
                         email = safeEmail,
                         profileImage = profileImage,
-                        onAvatarClick = { showAvatarDialog = true }
+                        onAvatarClick = onOpenAccountInformation
                     )
                 }
 
                 item {
                     ProfileOptionCard(
                         title = "Account Information",
-                        subtitle = "Manage your personal details",
+                        subtitle = "Manage your personal details and photo",
                         icon = Icons.Outlined.PersonOutline,
                         onClick = onOpenAccountInformation
                     )
@@ -188,7 +160,7 @@ fun ProfileScreen(
                         title = "Notification Preferences",
                         subtitle = "Control reminders and updates",
                         icon = Icons.Outlined.NotificationsNone,
-                        onClick = { }
+                        onClick = onOpenNotificationPreferences
                     )
                 }
 
@@ -197,7 +169,7 @@ fun ProfileScreen(
                         title = "Privacy & Security",
                         subtitle = "Keep your account protected",
                         icon = Icons.Outlined.Shield,
-                        onClick = { }
+                        onClick = onOpenPrivacySecurity
                     )
                 }
 
@@ -206,7 +178,7 @@ fun ProfileScreen(
                         title = "Help & Support",
                         subtitle = "Get help with your Futuris account",
                         icon = Icons.Outlined.HelpOutline,
-                        onClick = { }
+                        onClick = onOpenHelpSupport
                     )
                 }
 
@@ -229,46 +201,6 @@ fun ProfileScreen(
                 onTabSelected = onTabSelected
             )
         }
-    }
-
-    if (showAvatarDialog) {
-        AlertDialog(
-            onDismissRequest = { showAvatarDialog = false },
-            containerColor = Color(0xFF241136),
-            title = {
-                Text(
-                    text = "Update profile photo",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    AvatarChoiceRow(
-                        icon = Icons.Outlined.CameraAlt,
-                        title = "Take photo",
-                        onClick = {
-                            showAvatarDialog = false
-                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-                        }
-                    )
-
-                    AvatarChoiceRow(
-                        icon = Icons.Outlined.PhotoLibrary,
-                        title = "Choose from gallery",
-                        onClick = {
-                            showAvatarDialog = false
-                            galleryLauncher.launch("image/*")
-                        }
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showAvatarDialog = false }) {
-                    Text(text = "Close", color = Color(0xFFD8B8FF))
-                }
-            }
-        )
     }
 }
 
@@ -316,30 +248,12 @@ private fun ProfileHeader(
                     )
                 } else {
                     Icon(
-                        imageVector = Icons.Outlined.CameraAlt,
+                        imageVector = Icons.Outlined.PhotoCamera,
                         contentDescription = "Add profile picture",
                         tint = Color.White,
                         modifier = Modifier.size(34.dp)
                     )
                 }
-            }
-
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 8.dp, bottom = 8.dp)
-                    .size(30.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFB15CFF))
-                    .border(1.dp, Color.White, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.CameraAlt,
-                    contentDescription = "Change profile picture",
-                    tint = Color.White,
-                    modifier = Modifier.size(16.dp)
-                )
             }
         }
 
@@ -364,40 +278,6 @@ private fun ProfileHeader(
         )
 
         Spacer(modifier = Modifier.height(18.dp))
-    }
-}
-
-@Composable
-private fun AvatarChoiceRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color(0x8F4B1D76))
-            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
-            .clickable { onClick() }
-            .padding(horizontal = 14.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = title,
-            tint = CardIcon,
-            modifier = Modifier.size(22.dp)
-        )
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Text(
-            text = title,
-            color = Color.White,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.SemiBold
-        )
     }
 }
 

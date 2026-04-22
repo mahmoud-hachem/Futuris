@@ -1,5 +1,6 @@
 package com.example.futuris.data
 
+import android.util.Log
 import com.example.futuris.backend.AiInsightRequest
 import com.example.futuris.backend.AiInsightResponse
 import com.example.futuris.backend.QuizAnswerPayload
@@ -8,6 +9,8 @@ import com.example.futuris.model.QuizAnswer
 import com.example.futuris.utils.getZodiacSign
 
 object HomePredictionManager {
+
+    private const val TAG = "FuturisInsightDebug"
 
     fun generateHomePrediction(
         userId: String,
@@ -21,10 +24,10 @@ object HomePredictionManager {
         chatMessages: List<String>
     ): String {
 
-        // STEP 1 — Read quiz answers saved in memory store
+        Log.d(TAG, "generateHomePrediction() started")
+
         val storedQuizAnswers = QuizMemoryStore.getAnswers(userId)
 
-        // STEP 2 — Use stored answers if they exist, otherwise fallback
         val finalQuizAnswers =
             if (storedQuizAnswers.isNotEmpty()) {
                 storedQuizAnswers
@@ -32,28 +35,29 @@ object HomePredictionManager {
                 quizAnswers
             }
 
-        // STEP 3 — Combine Quiz + Chat Scores
+        Log.d(TAG, "generateHomePrediction() finalQuizAnswers size = ${finalQuizAnswers.size}")
+        Log.d(TAG, "generateHomePrediction() chatMessages size = ${chatMessages.size}")
+
         val finalScores =
             PredictionEngine.generateFinalScores(
                 finalQuizAnswers,
                 chatMessages
             )
 
-        // STEP 4 — Get Top Categories
-        val (mainCategory, secondaryCategory) =
-            PredictionEngine.getTopCategories(finalScores)
+        Log.d(TAG, "generateHomePrediction() finalScores = $finalScores")
 
-        // STEP 5 — Get Zodiac
         val zodiac = getZodiacSign(dateOfBirth)
 
-        // STEP 6 — Generate Home Insight
-        val homeInsight =
-            InsightGenerator.generateHomeInsight(
-                finalScores,
-                zodiac
-            )
+        Log.d(TAG, "generateHomePrediction() zodiac = $zodiac")
 
-        return homeInsight
+        val result = InsightGenerator.generateHomeInsight(
+            finalScores,
+            zodiac
+        )
+
+        Log.d(TAG, "generateHomePrediction() result = $result")
+
+        return result
     }
 
     suspend fun generateHomePredictionWithFallback(
@@ -72,20 +76,34 @@ object HomePredictionManager {
         chatMessages: List<String> = emptyList()
     ): AiInsightResponse {
 
-        // 1) local fallback prediction
-        val localPrediction = generateHomePrediction(
-            userId = userId,
-            firstName = firstName,
-            lastName = lastName,
-            username = username,
-            email = email,
-            gender = gender,
-            dateOfBirth = dateOfBirth,
-            quizAnswers = quizAnswers,
-            chatMessages = chatMessages
-        )
+        Log.d(TAG, "==============================")
+        Log.d(TAG, "generateHomePredictionWithFallback() START")
+        Log.d(TAG, "userId = $userId")
+        Log.d(TAG, "firstName = $firstName")
+        Log.d(TAG, "category = $category")
+        Log.d(TAG, "dateOfBirth = $dateOfBirth")
+        Log.d(TAG, "quizAnswers incoming size = ${quizAnswers.size}")
+        Log.d(TAG, "chatMessages incoming size = ${chatMessages.size}")
 
         return try {
+            Log.d(TAG, "STEP 1: generating localPrediction")
+
+            val localPrediction = generateHomePrediction(
+                userId = userId,
+                firstName = firstName,
+                lastName = lastName,
+                username = username,
+                email = email,
+                gender = gender,
+                dateOfBirth = dateOfBirth,
+                quizAnswers = quizAnswers,
+                chatMessages = chatMessages
+            )
+
+            Log.d(TAG, "STEP 1 OK: localPrediction = $localPrediction")
+
+            Log.d(TAG, "STEP 2: reading stored quiz answers")
+
             val storedQuizAnswers = QuizMemoryStore.getAnswers(userId)
 
             val finalQuizAnswers =
@@ -95,16 +113,28 @@ object HomePredictionManager {
                     quizAnswers
                 }
 
+            Log.d(TAG, "STEP 2 OK: finalQuizAnswers size = ${finalQuizAnswers.size}")
+
+            Log.d(TAG, "STEP 3: generating localScores")
+
             val localScores =
                 PredictionEngine.generateFinalScores(
                     finalQuizAnswers,
                     chatMessages
                 )
 
-            val zodiac = getZodiacSign(dateOfBirth)
+            Log.d(TAG, "STEP 3 OK: localScores = $localScores")
 
+            Log.d(TAG, "STEP 4: zodiac")
+            val zodiac = getZodiacSign(dateOfBirth)
+            Log.d(TAG, "STEP 4 OK: zodiac = $zodiac")
+
+            Log.d(TAG, "STEP 5: top keywords")
             val topKeywords =
                 ChatAnalyzer.extractTopKeywords(chatMessages)
+            Log.d(TAG, "STEP 5 OK: topKeywords = $topKeywords")
+
+            Log.d(TAG, "STEP 6: building request")
 
             val request = AiInsightRequest(
                 userId = userId,
@@ -131,52 +161,84 @@ object HomePredictionManager {
                 localPrediction = localPrediction
             )
 
-            val response =
-                RetrofitClient.api.generateAiInsight(request)
+            Log.d(TAG, "STEP 6 OK: request built")
+            Log.d(TAG, "Request category = ${request.category}")
+            Log.d(TAG, "Request zodiac = ${request.zodiac}")
+            Log.d(TAG, "Request quizAnswers size = ${request.quizAnswers.size}")
+            Log.d(TAG, "Request chatMessages size = ${request.chatMessages.size}")
+            Log.d(TAG, "Request localScores = ${request.localScores}")
+            Log.d(TAG, "Request topKeywords = ${request.topKeywords}")
 
-            if (response.isSuccessful && response.body() != null) {
-                val body = response.body()!!
+            Log.d(TAG, "STEP 7: calling Retrofit api.generateAiInsight()")
 
+            val response = RetrofitClient.api.generateAiInsight(request)
+
+            Log.d(TAG, "STEP 7 OK: network response received")
+            Log.d(TAG, "HTTP code = ${response.code()}")
+            Log.d(TAG, "HTTP success = ${response.isSuccessful}")
+
+            val body = response.body()
+            Log.d(TAG, "Response body = $body")
+
+            if (response.isSuccessful && body != null) {
                 if (body.success && body.insight.isNotBlank()) {
+                    Log.d(TAG, "FINAL OK: returning online insight")
                     body
                 } else {
+                    Log.e(TAG, "FINAL FAIL: body exists but success=false or insight blank")
                     AiInsightResponse(
-                        success = true,
+                        success = false,
                         title = "$category Insight",
-                        insight = localPrediction,
-                        advice = "Trust your current rhythm and keep observing your recent patterns.",
-                        energy = "Balanced",
+                        insight = "",
+                        questions = emptyList(),
+                        advice = "",
+                        energy = "",
                         focus = category,
-                        confidence = 60,
-                        source = "local",
-                        message = "AI response was empty, local fallback used."
+                        confidence = 0,
+                        source = "online-error",
+                        message = body.message.ifBlank {
+                            "Online insight returned an empty response."
+                        }
                     )
                 }
             } else {
+                val errorText = try {
+                    response.errorBody()?.string().orEmpty()
+                } catch (e: Exception) {
+                    ""
+                }
+
+                Log.e(TAG, "FINAL FAIL: response not successful")
+                Log.e(TAG, "Error body = $errorText")
+
                 AiInsightResponse(
-                    success = true,
+                    success = false,
                     title = "$category Insight",
-                    insight = localPrediction,
-                    advice = "Trust your current rhythm and keep observing your recent patterns.",
-                    energy = "Balanced",
+                    insight = "",
+                    questions = emptyList(),
+                    advice = "",
+                    energy = "",
                     focus = category,
-                    confidence = 60,
-                    source = "local",
-                    message = "Network call failed, local fallback used."
+                    confidence = 0,
+                    source = "network-error",
+                    message = "Network call failed: ${response.code()} $errorText"
                 )
             }
 
         } catch (e: Exception) {
+            Log.e(TAG, "EXCEPTION in generateHomePredictionWithFallback()", e)
+
             AiInsightResponse(
-                success = true,
+                success = false,
                 title = "$category Insight",
-                insight = localPrediction,
-                advice = "Trust your current rhythm and keep observing your recent patterns.",
-                energy = "Balanced",
+                insight = "",
+                questions = emptyList(),
+                advice = "",
+                energy = "",
                 focus = category,
-                confidence = 60,
-                source = "local",
-                message = e.message ?: "Unknown error, local fallback used."
+                confidence = 0,
+                source = "exception",
+                message = e.message ?: "Unknown error while generating online insight."
             )
         }
     }

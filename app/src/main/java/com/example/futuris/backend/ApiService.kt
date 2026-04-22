@@ -29,7 +29,8 @@ data class UserData(
     val dateOfBirth: String? = null,
     val gender: String? = null,
     val phone: String? = null,
-    val insights: List<String> = emptyList()
+    val insights: List<String> = emptyList(),
+    val isVerified: Boolean? = null
 )
 
 data class LoginRequest(
@@ -39,7 +40,9 @@ data class LoginRequest(
 
 data class LoginResponse(
     val message: String,
-    val user: UserData? = null
+    val user: UserData? = null,
+    val requiresVerification: Boolean? = null,
+    val email: String? = null
 )
 
 data class ForgotPasswordRequest(
@@ -48,6 +51,34 @@ data class ForgotPasswordRequest(
 
 data class ForgotPasswordResponse(
     val message: String
+)
+
+data class VerifyEmailRequest(
+    val email: String,
+    val code: String
+)
+
+data class VerifyEmailResponse(
+    val success: Boolean = false,
+    val message: String = ""
+)
+
+data class ResendVerificationCodeRequest(
+    val email: String
+)
+
+data class ResendVerificationCodeResponse(
+    val message: String = ""
+)
+
+data class ChangePasswordRequest(
+    val email: String,
+    val currentPassword: String,
+    val newPassword: String
+)
+
+data class ChangePasswordResponse(
+    val message: String = ""
 )
 
 // ======================= LIVE AI INSIGHT =======================
@@ -81,6 +112,7 @@ data class AiInsightResponse(
     val success: Boolean = false,
     val title: String = "",
     val insight: String = "",
+    val questions: List<String> = emptyList(),
     val advice: String = "",
     val energy: String = "",
     val focus: String = "",
@@ -105,6 +137,21 @@ interface ApiService {
     suspend fun forgotPassword(
         @Body request: ForgotPasswordRequest
     ): Response<ForgotPasswordResponse>
+
+    @POST("api/auth/verify-email")
+    suspend fun verifyEmail(
+        @Body request: VerifyEmailRequest
+    ): Response<VerifyEmailResponse>
+
+    @POST("api/auth/resend-verification-code")
+    suspend fun resendVerificationCode(
+        @Body request: ResendVerificationCodeRequest
+    ): Response<ResendVerificationCodeResponse>
+
+    @POST("api/auth/change-password")
+    suspend fun changePassword(
+        @Body request: ChangePasswordRequest
+    ): Response<ChangePasswordResponse>
 
     @POST("api/insight/generate")
     suspend fun generateAiInsight(

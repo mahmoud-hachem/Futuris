@@ -1,6 +1,11 @@
 package com.example.futuris.screens.profile
 
+import android.graphics.BitmapFactory
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -27,11 +32,8 @@ import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Save
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -46,13 +48,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -60,11 +62,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import java.io.InputStream
 
 data class AccountInfoUiState(
     val firstName: String = "",
@@ -74,7 +80,8 @@ data class AccountInfoUiState(
     val dateOfBirth: String = "",
     val gender: String = "",
     val notificationsEnabled: Boolean = true,
-    val insightReminders: Boolean = true
+    val insightReminders: Boolean = true,
+    val profileImageUri: String = ""
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -84,18 +91,30 @@ fun AccountInformationScreen(
     userData: AccountInfoUiState,
     onBackClick: () -> Unit = {},
     onSaveClick: (AccountInfoUiState) -> Unit = {},
-    onChangePhotoClick: () -> Unit = {},
     onChangePasswordClick: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+
     var firstName by rememberSaveable(userData.firstName) { mutableStateOf(userData.firstName) }
     var lastName by rememberSaveable(userData.lastName) { mutableStateOf(userData.lastName) }
     var username by rememberSaveable(userData.username) { mutableStateOf(userData.username) }
-    var email by rememberSaveable(userData.email) { mutableStateOf(userData.email) }
-    var notificationsEnabled by rememberSaveable(userData.notificationsEnabled) { mutableStateOf(userData.notificationsEnabled) }
-    var insightReminders by rememberSaveable(userData.insightReminders) { mutableStateOf(userData.insightReminders) }
+    var profileImageUri by rememberSaveable(userData.profileImageUri) { mutableStateOf(userData.profileImageUri) }
 
-    val dateOfBirthDisplay = userData.dateOfBirth.ifBlank { "Saved during signup" }
-    val genderDisplay = userData.gender.ifBlank { "Saved during signup" }
+    val profileImageBitmap = remember(profileImageUri) {
+        if (profileImageUri.isBlank()) null
+        else loadAccountImageBitmapFromUri(context, Uri.parse(profileImageUri))
+    }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            profileImageUri = uri.toString()
+        }
+    }
+
+    val dateOfBirthDisplay = userData.dateOfBirth.ifBlank { "Not available" }
+    val genderDisplay = userData.gender.ifBlank { "Not available" }
 
     val backgroundGradient = Brush.verticalGradient(
         colors = listOf(
@@ -135,7 +154,7 @@ fun AccountInformationScreen(
         if (isEmpty()) {
             when {
                 username.isNotBlank() -> append(username.trim().first().uppercaseChar())
-                email.isNotBlank() -> append(email.trim().first().uppercaseChar())
+                userData.email.isNotBlank() -> append(userData.email.trim().first().uppercaseChar())
                 else -> append("F")
             }
         }
@@ -213,12 +232,21 @@ fun AccountInformationScreen(
                             .border(2.dp, Color.White.copy(alpha = 0.18f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = initials,
-                            color = Color.White,
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold
-                        )
+                        if (profileImageBitmap != null) {
+                            Image(
+                                bitmap = profileImageBitmap,
+                                contentDescription = "Profile photo",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                            )
+                        } else {
+                            Text(
+                                text = initials,
+                                color = Color.White,
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
@@ -251,7 +279,7 @@ fun AccountInformationScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     OutlinedButton(
-                        onClick = onChangePhotoClick,
+                        onClick = { galleryLauncher.launch("image/*") },
                         shape = RoundedCornerShape(14.dp),
                         border = BorderStroke(
                             1.dp,
@@ -278,7 +306,7 @@ fun AccountInformationScreen(
             ) {
                 SectionHeader(
                     title = "Editable Profile Details",
-                    subtitle = "These can reasonably be updated by the user",
+                    subtitle = "These are the main personal fields you can update",
                     icon = Icons.Default.Person,
                     titleColor = textPrimary,
                     subtitleColor = textSecondary
@@ -311,14 +339,18 @@ fun AccountInformationScreen(
                     mutedColor = textSecondary
                 )
 
-                FuturisTextField(
-                    value = email,
-                    onValueChange = { email = it },
+                FuturisReadOnlyTextField(
+                    value = userData.email,
                     label = "Email Address",
                     icon = Icons.Default.Email,
                     textColor = textPrimary,
-                    mutedColor = textSecondary,
-                    keyboardType = KeyboardType.Email
+                    mutedColor = textSecondary
+                )
+
+                Text(
+                    text = "Email is locked for now for account security. A dedicated verified email-change flow can be added later.",
+                    color = textSecondary,
+                    style = MaterialTheme.typography.bodySmall
                 )
             }
 
@@ -351,85 +383,6 @@ fun AccountInformationScreen(
                     textPrimary = textPrimary,
                     textSecondary = textSecondary
                 )
-
-                Text(
-                    text = "These are set during signup because they influence how insights, quiz interpretation, and guidance are personalized.",
-                    color = textSecondary,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-
-            FuturisSectionCard(
-                cardColor = cardColor,
-                borderColor = borderColor
-            ) {
-                SectionHeader(
-                    title = "Preferences",
-                    subtitle = "Useful settings for alerts and app guidance",
-                    icon = Icons.Default.Notifications,
-                    titleColor = textPrimary,
-                    subtitleColor = textSecondary
-                )
-
-                FuturisSwitchRow(
-                    title = "Notifications",
-                    description = "Receive important alerts and account updates",
-                    checked = notificationsEnabled,
-                    onCheckedChange = { notificationsEnabled = it },
-                    titleColor = textPrimary,
-                    descriptionColor = textSecondary
-                )
-
-                HorizontalDivider(
-                    thickness = 1.dp,
-                    color = Color.White.copy(alpha = 0.07f)
-                )
-
-                FuturisSwitchRow(
-                    title = "Insight Reminders",
-                    description = "Get reminders to check your daily and category-based insights",
-                    checked = insightReminders,
-                    onCheckedChange = { insightReminders = it },
-                    titleColor = textPrimary,
-                    descriptionColor = textSecondary
-                )
-            }
-
-            FuturisSectionCard(
-                cardColor = cardColor,
-                borderColor = borderColor
-            ) {
-                SectionHeader(
-                    title = "Security",
-                    subtitle = "Sensitive actions should be separate from profile editing",
-                    icon = Icons.Default.Security,
-                    titleColor = textPrimary,
-                    subtitleColor = textSecondary
-                )
-
-                OutlinedButton(
-                    onClick = onChangePasswordClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = textPrimary
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.size(8.dp))
-                    Text("Change Password")
-                }
-
-                Text(
-                    text = "Password changes belong in a dedicated flow for better security and fewer mistakes.",
-                    color = textSecondary,
-                    style = MaterialTheme.typography.bodySmall
-                )
             }
 
             Button(
@@ -439,11 +392,12 @@ fun AccountInformationScreen(
                             firstName = firstName.trim(),
                             lastName = lastName.trim(),
                             username = username.trim(),
-                            email = email.trim(),
+                            email = userData.email.trim(),
                             dateOfBirth = userData.dateOfBirth,
                             gender = userData.gender,
-                            notificationsEnabled = notificationsEnabled,
-                            insightReminders = insightReminders
+                            notificationsEnabled = userData.notificationsEnabled,
+                            insightReminders = userData.insightReminders,
+                            profileImageUri = profileImageUri
                         )
                     )
                 },
@@ -651,41 +605,59 @@ fun FuturisTextField(
 }
 
 @Composable
-fun FuturisSwitchRow(
-    title: String,
-    description: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    titleColor: Color,
-    descriptionColor: Color
+fun FuturisReadOnlyTextField(
+    value: String,
+    label: String,
+    icon: ImageVector,
+    textColor: Color,
+    mutedColor: Color
 ) {
-    Row(
+    OutlinedTextField(
+        value = value,
+        onValueChange = {},
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
+        readOnly = true,
+        label = {
             Text(
-                text = title,
-                color = titleColor,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold
+                text = label,
+                color = mutedColor
             )
-
-            Spacer(modifier = Modifier.height(3.dp))
-
-            Text(
-                text = description,
-                color = descriptionColor,
-                style = MaterialTheme.typography.bodySmall
+        },
+        leadingIcon = {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = mutedColor
             )
-        }
-
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange
+        },
+        singleLine = true,
+        shape = RoundedCornerShape(16.dp),
+        colors = TextFieldDefaults.colors(
+            focusedTextColor = textColor,
+            unfocusedTextColor = textColor,
+            focusedContainerColor = Color(0xFF241D3F),
+            unfocusedContainerColor = Color(0xFF241D3F),
+            cursorColor = Color.Transparent,
+            focusedIndicatorColor = Color.White.copy(alpha = 0.10f),
+            unfocusedIndicatorColor = Color.White.copy(alpha = 0.10f),
+            focusedLabelColor = mutedColor,
+            unfocusedLabelColor = mutedColor,
+            focusedLeadingIconColor = mutedColor,
+            unfocusedLeadingIconColor = mutedColor
         )
+    )
+}
+
+private fun loadAccountImageBitmapFromUri(
+    context: android.content.Context,
+    uri: Uri
+): ImageBitmap? {
+    return try {
+        val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
+        val bitmap = BitmapFactory.decodeStream(inputStream)
+        inputStream?.close()
+        bitmap?.asImageBitmap()
+    } catch (_: Exception) {
+        null
     }
 }
