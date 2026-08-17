@@ -3,8 +3,6 @@ package com.example.futuris.backend
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.POST
-import retrofit2.http.PUT
-import retrofit2.http.Path
 
 // ======================= AUTH =======================
 
@@ -15,10 +13,7 @@ data class RegisterRequest(
     val gender: String,
     val username: String,
     val email: String,
-    val password: String,
-    val lifeFocus: String = "",
-    val state: String = "",
-    val intent: String = ""
+    val password: String
 )
 
 data class RegisterResponse(
@@ -34,10 +29,8 @@ data class UserData(
     val dateOfBirth: String? = null,
     val gender: String? = null,
     val phone: String? = null,
-    val lifeFocus: String? = null,
-    val state: String? = null,
-    val intent: String? = null,
-    val insights: List<String> = emptyList()
+    val insights: List<String> = emptyList(),
+    val isVerified: Boolean? = null
 )
 
 data class LoginRequest(
@@ -47,7 +40,9 @@ data class LoginRequest(
 
 data class LoginResponse(
     val message: String,
-    val user: UserData? = null
+    val user: UserData? = null,
+    val requiresVerification: Boolean? = null,
+    val email: String? = null
 )
 
 data class ForgotPasswordRequest(
@@ -58,18 +53,31 @@ data class ForgotPasswordResponse(
     val message: String
 )
 
-// ======================= PROFILE UPDATE =======================
-
-data class UpdateProfileRequest(
-    val email: String,           // used to identify the user
-    val firstName: String,
-    val lastName: String,
-    val username: String,
-    val newEmail: String         // new email if changed
+data class VerifyEmailRequest(
+    val email: String,
+    val code: String
 )
 
-data class UpdateProfileResponse(
+data class VerifyEmailResponse(
     val success: Boolean = false,
+    val message: String = ""
+)
+
+data class ResendVerificationCodeRequest(
+    val email: String
+)
+
+data class ResendVerificationCodeResponse(
+    val message: String = ""
+)
+
+data class ChangePasswordRequest(
+    val email: String,
+    val currentPassword: String,
+    val newPassword: String
+)
+
+data class ChangePasswordResponse(
     val message: String = ""
 )
 
@@ -104,6 +112,7 @@ data class AiInsightResponse(
     val success: Boolean = false,
     val title: String = "",
     val insight: String = "",
+    val questions: List<String> = emptyList(),
     val advice: String = "",
     val energy: String = "",
     val focus: String = "",
@@ -129,11 +138,20 @@ interface ApiService {
         @Body request: ForgotPasswordRequest
     ): Response<ForgotPasswordResponse>
 
-    // Update profile (name, username, email)
-    @PUT("api/auth/update-profile")
-    suspend fun updateProfile(
-        @Body request: UpdateProfileRequest
-    ): Response<UpdateProfileResponse>
+    @POST("api/auth/verify-email")
+    suspend fun verifyEmail(
+        @Body request: VerifyEmailRequest
+    ): Response<VerifyEmailResponse>
+
+    @POST("api/auth/resend-verification-code")
+    suspend fun resendVerificationCode(
+        @Body request: ResendVerificationCodeRequest
+    ): Response<ResendVerificationCodeResponse>
+
+    @POST("api/auth/change-password")
+    suspend fun changePassword(
+        @Body request: ChangePasswordRequest
+    ): Response<ChangePasswordResponse>
 
     @POST("api/insight/generate")
     suspend fun generateAiInsight(

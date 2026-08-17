@@ -15,8 +15,16 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -25,7 +33,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -58,7 +70,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Composable
-fun SignupScreen(onGoLogin: () -> Unit) {
+fun SignupScreen(
+    onGoLogin: () -> Unit,
+    onGoEmailVerification: () -> Unit
+) {
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
@@ -331,13 +346,15 @@ fun SignupScreen(onGoLogin: () -> Unit) {
                     if (isValid) {
                         isLoading = true
 
+                        val cleanEmail = email.trim().lowercase()
+
                         val request = RegisterRequest(
                             firstName = firstName.trim(),
                             lastName = lastName.trim(),
                             dateOfBirth = dateOfBirth.trim(),
                             gender = gender.trim(),
                             username = username.trim(),
-                            email = email.trim(),
+                            email = cleanEmail,
                             password = password
                         )
 
@@ -349,27 +366,26 @@ fun SignupScreen(onGoLogin: () -> Unit) {
                                     isLoading = false
 
                                     if (response.isSuccessful) {
-
                                         val prefs = context.getSharedPreferences(
                                             "FuturisPrefs",
                                             android.content.Context.MODE_PRIVATE
                                         )
 
                                         prefs.edit()
-                                            .putString("userId", email.trim())
-                                            .putString("firstName", firstName.trim())
-                                            .putString("dateOfBirth", dateOfBirth.trim())
+                                            .putString("pendingVerificationEmail", cleanEmail)
+                                            .putString("pendingVerificationFirstName", firstName.trim())
                                             .apply()
 
                                         Toast.makeText(
                                             context,
-                                            "Account created successfully. Please log in.",
+                                            "Account created. Verification code sent to your email.",
                                             Toast.LENGTH_LONG
                                         ).show()
 
-                                        onGoLogin()
+                                        onGoEmailVerification()
                                     } else {
                                         val errorMsg = response.errorBody()?.string()
+
                                         android.util.Log.d("SIGNUP", "ERROR: $errorMsg")
 
                                         Toast.makeText(
