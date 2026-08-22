@@ -17,8 +17,10 @@ local.properties
 # Captures
 captures/
 
-# Node dependencies, if any local tooling creates them
+# Node / npm files
 node_modules/
+package.json
+package-lock.json
 
 # Environment variables
 .env
