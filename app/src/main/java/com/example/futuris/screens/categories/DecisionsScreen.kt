@@ -238,7 +238,7 @@ fun DecisionsScreen(
                 Text(
                     text = "Decisions & Guidance",
                     color = Color.White,
-                    fontSize = 27.sp,
+                    fontSize = 21.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
@@ -454,10 +454,10 @@ private fun DecisionsCenterImage() {
         )
 
         Image(
-            painter = painterResource(id = R.drawable.card_decisions),
+            painter = painterResource(id = R.drawable.decisions),
             contentDescription = "Decisions category image",
             contentScale = ContentScale.Fit,
-            modifier = Modifier.size(175.dp)
+            modifier = Modifier.size(240.dp)
         )
     }
 }

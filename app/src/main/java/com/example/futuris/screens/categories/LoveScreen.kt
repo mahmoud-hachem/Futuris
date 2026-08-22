@@ -238,7 +238,7 @@ fun LoveScreen(
                 Text(
                     text = "Love & Relationships",
                     color = Color.White,
-                    fontSize = 29.sp,
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
@@ -283,7 +283,6 @@ fun LoveScreen(
                         glowColor = Color(0x44FF7CCB),
                         onClick = {
                             selectedQuestion = question
-                            onQuestionClick(question)
 
                             scope.launch {
                                 val previousInsight = finalText
@@ -454,10 +453,10 @@ private fun LoveCenterImage() {
         )
 
         Image(
-            painter = painterResource(id = R.drawable.card_love),
+            painter = painterResource(id = R.drawable.love1),
             contentDescription = "Love category image",
             contentScale = ContentScale.Fit,
-            modifier = Modifier.size(175.dp)
+            modifier = Modifier.size(240.dp)
         )
     }
 }

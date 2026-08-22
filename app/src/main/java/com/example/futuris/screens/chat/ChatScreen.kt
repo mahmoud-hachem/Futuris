@@ -1,4 +1,5 @@
 package com.example.futuris.screens.chat
+
 import androidx.compose.foundation.layout.width
 import android.content.Context
 import android.widget.Toast
@@ -13,6 +14,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -58,11 +60,11 @@ import com.example.futuris.screens.home.BottomTabItem
 import com.example.futuris.screens.home.GlassBottomBar
 import okhttp3.Call
 import okhttp3.Callback
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.Response
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
 import org.json.JSONObject
 import java.io.IOException
 import java.util.concurrent.TimeUnit
@@ -303,6 +305,8 @@ fun ChatScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             }
+
+            Spacer(modifier = Modifier.height(18.dp))
 
             ChatInputBar(
                 value = message,

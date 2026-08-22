@@ -454,10 +454,10 @@ private fun LifePathCenterImage() {
         )
 
         Image(
-            painter = painterResource(id = R.drawable.card_lifepath),
+            painter = painterResource(id = R.drawable.lifepath),
             contentDescription = "Life path category image",
             contentScale = ContentScale.Fit,
-            modifier = Modifier.size(175.dp)
+            modifier = Modifier.size(230.dp)
         )
     }
 }

@@ -454,10 +454,10 @@ private fun CareerCenterImage() {
         )
 
         Image(
-            painter = painterResource(id = R.drawable.card_career),
+            painter = painterResource(id = R.drawable.career),
             contentDescription = "Career category image",
             contentScale = ContentScale.Fit,
-            modifier = Modifier.size(175.dp)
+            modifier = Modifier.size(230.dp)
         )
     }
 }

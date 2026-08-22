@@ -5,16 +5,22 @@ import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,9 +30,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.futuris.R
@@ -35,7 +48,8 @@ import com.example.futuris.backend.RetrofitClient
 import com.example.futuris.backend.VerifyEmailRequest
 import com.example.futuris.components.FuturisBackground
 import com.example.futuris.components.FuturisButton
-import com.example.futuris.components.OtpBox
+import com.example.futuris.ui.theme.CardBottom
+import com.example.futuris.ui.theme.CardTop
 import com.example.futuris.ui.theme.LinkPurple
 import com.example.futuris.ui.theme.SoftText
 import com.example.futuris.ui.theme.TitleWhite
@@ -59,6 +73,10 @@ fun EmailVerificationScreen(
 
     val code = remember {
         mutableStateListOf("", "", "", "", "", "")
+    }
+
+    val focusRequesters = remember {
+        List(6) { FocusRequester() }
     }
 
     var isLoading by remember { mutableStateOf(false) }
@@ -91,12 +109,15 @@ fun EmailVerificationScreen(
 
             Text(
                 text = if (pendingEmail.isNotBlank()) {
-                    "We sent a 6-digit code to $pendingEmail"
+                    "We sent a 6-digit code to\n$pendingEmail"
                 } else {
-                    "We sent a 6-digit code to your email"
+                    "We sent a 6-digit code to\nyour email"
                 },
                 color = SoftText,
-                fontSize = 14.sp
+                fontSize = 14.sp,
+                lineHeight = 21.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(44.dp))
@@ -106,11 +127,17 @@ fun EmailVerificationScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 for (i in 0..5) {
-                    OtpBox(
+                    AutoMoveOtpBox(
                         value = code[i],
-                        onValueChange = {
-                            if (!isLoading && it.length <= 1) {
-                                code[i] = it.filter { ch -> ch.isDigit() }
+                        enabled = !isLoading,
+                        focusRequester = focusRequesters[i],
+                        onValueChange = { newValue ->
+                            val digit = newValue.filter { it.isDigit() }.take(1)
+
+                            code[i] = digit
+
+                            if (digit.isNotEmpty() && i < 5) {
+                                focusRequesters[i + 1].requestFocus()
                             }
                         }
                     )
@@ -277,5 +304,46 @@ fun EmailVerificationScreen(
                 modifier = Modifier.clickable { onGoLogin() }
             )
         }
+    }
+}
+
+@Composable
+private fun AutoMoveOtpBox(
+    value: String,
+    enabled: Boolean,
+    focusRequester: FocusRequester,
+    onValueChange: (String) -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(width = 43.dp, height = 54.dp)
+            .focusRequester(focusRequester)
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(CardTop, CardBottom)
+                ),
+                shape = RoundedCornerShape(14.dp)
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        BasicTextField(
+            value = value,
+            onValueChange = {
+                if (enabled) onValueChange(it)
+            },
+            enabled = enabled,
+            singleLine = true,
+            textStyle = TextStyle(
+                color = TitleWhite,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            ),
+            cursorBrush = SolidColor(TitleWhite),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.NumberPassword
+            ),
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }

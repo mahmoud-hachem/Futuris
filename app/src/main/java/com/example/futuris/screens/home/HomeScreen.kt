@@ -162,7 +162,7 @@ fun HomeScreen(
             Text(
                 text = "$greeting, $safeFirstName 🔮",
                 color = Color.White,
-                fontSize = 26.sp,
+                fontSize = 23.sp,
                 fontWeight = FontWeight.Bold
             )
 

@@ -16,36 +16,17 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.*
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -53,6 +34,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.futuris.R
@@ -61,12 +43,7 @@ import com.example.futuris.backend.RetrofitClient
 import com.example.futuris.components.FuturisBackground
 import com.example.futuris.components.FuturisButton
 import com.example.futuris.components.FuturisField
-import com.example.futuris.ui.theme.CardBottom
-import com.example.futuris.ui.theme.CardTop
-import com.example.futuris.ui.theme.HintText
-import com.example.futuris.ui.theme.LinkPurple
-import com.example.futuris.ui.theme.SoftText
-import com.example.futuris.ui.theme.TitleWhite
+import com.example.futuris.ui.theme.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -78,12 +55,12 @@ fun LoginScreen(
     onForgotPassword: () -> Unit,
     onGoEmailVerification: () -> Unit,
     onLoginSuccess: (
-        String, // username
-        String, // firstName
-        String, // lastName
-        String, // email
-        String, // dateOfBirth
-        String  // gender
+        String,
+        String,
+        String,
+        String,
+        String,
+        String
     ) -> Unit
 ) {
     val focusManager = LocalFocusManager.current
@@ -91,19 +68,17 @@ fun LoginScreen(
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var showPassword by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
 
     FuturisBackground {
-        Box(
-            modifier = Modifier.fillMaxSize()
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 30.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-
                 Spacer(modifier = Modifier.height(70.dp))
 
                 Image(
@@ -141,18 +116,34 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                PasswordWithForgotField(
+                PasswordFieldWithEye(
                     value = password,
                     onValueChange = {
                         if (!isLoading) password = it
                     },
-                    placeholder = "Password",
-                    onForgotClick = {
-                        if (!isLoading) onForgotPassword()
+                    passwordVisible = showPassword,
+                    onTogglePassword = {
+                        if (!isLoading) showPassword = !showPassword
                     }
                 )
 
-                Spacer(modifier = Modifier.height(30.dp))
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = "Forgot password?",
+                    color = LinkPurple,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable(
+                        enabled = !isLoading,
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) {
+                        onForgotPassword()
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(26.dp))
 
                 FuturisButton(
                     text = if (isLoading) "Logging in..." else "Log In",
@@ -269,7 +260,6 @@ fun LoginScreen(
                                         }
                                     }
                                 }
-
                             } catch (e: Exception) {
                                 Handler(Looper.getMainLooper()).post {
                                     isLoading = false
@@ -315,6 +305,68 @@ fun LoginScreen(
 }
 
 @Composable
+private fun PasswordFieldWithEye(
+    value: String,
+    onValueChange: (String) -> Unit,
+    passwordVisible: Boolean,
+    onTogglePassword: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(54.dp)
+            .shadow(10.dp, RoundedCornerShape(15.dp))
+            .clip(RoundedCornerShape(15.dp))
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(CardTop, CardBottom)
+                )
+            )
+            .padding(horizontal = 16.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            singleLine = true,
+            textStyle = TextStyle(
+                color = TitleWhite,
+                fontSize = 15.sp
+            ),
+            cursorBrush = SolidColor(TitleWhite),
+            visualTransformation = if (passwordVisible) {
+                VisualTransformation.None
+            } else {
+                PasswordVisualTransformation()
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(end = 42.dp)
+        )
+
+        if (value.isEmpty()) {
+            Text(
+                text = "Password",
+                color = HintText,
+                fontSize = 14.sp
+            )
+        }
+
+        Text(
+            text = if (passwordVisible) "🙈" else "👁",
+            color = LinkPurple,
+            fontSize = 18.sp,
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ) { onTogglePassword() }
+        )
+    }
+}
+
+@Composable
 private fun FuturisPredictionLoadingOverlay(isVisible: Boolean) {
     val overlayAlpha by animateFloatAsState(
         targetValue = if (isVisible) 1f else 0f,
@@ -330,9 +382,7 @@ private fun FuturisPredictionLoadingOverlay(isVisible: Boolean) {
                 .alpha(overlayAlpha),
             contentAlignment = Alignment.Center
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 FuturisPredictionLoader()
 
                 Spacer(modifier = Modifier.height(18.dp))
@@ -497,64 +547,5 @@ private fun FuturisPredictionLoader() {
                 fontWeight = FontWeight.Bold
             )
         }
-    }
-}
-
-@Composable
-private fun PasswordWithForgotField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    placeholder: String,
-    onForgotClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(54.dp)
-            .shadow(10.dp, RoundedCornerShape(15.dp))
-            .clip(RoundedCornerShape(15.dp))
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(CardTop, CardBottom)
-                )
-            )
-            .padding(horizontal = 16.dp),
-        contentAlignment = Alignment.CenterStart
-    ) {
-
-        BasicTextField(
-            value = value,
-            onValueChange = onValueChange,
-            singleLine = true,
-            textStyle = TextStyle(
-                color = TitleWhite,
-                fontSize = 15.sp
-            ),
-            cursorBrush = SolidColor(TitleWhite),
-            visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(end = 105.dp)
-        )
-
-        if (value.isEmpty()) {
-            Text(
-                text = placeholder,
-                color = HintText,
-                fontSize = 14.sp
-            )
-        }
-
-        Text(
-            text = "Forgot password?",
-            color = LinkPurple,
-            fontSize = 12.sp,
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .clickable(
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() }
-                ) { onForgotClick() }
-        )
     }
 }
