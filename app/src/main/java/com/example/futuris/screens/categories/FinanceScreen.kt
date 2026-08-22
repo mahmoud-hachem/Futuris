@@ -454,10 +454,10 @@ private fun FinanceCenterImage() {
         )
 
         Image(
-            painter = painterResource(id = R.drawable.card_finance),
+            painter = painterResource(id = R.drawable.finance),
             contentDescription = "Finance category image",
             contentScale = ContentScale.Fit,
-            modifier = Modifier.size(175.dp)
+            modifier = Modifier.size(300.dp)
         )
     }
 }

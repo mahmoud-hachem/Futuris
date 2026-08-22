@@ -13,6 +13,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -22,19 +23,24 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -53,8 +59,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.example.futuris.R
 import com.example.futuris.backend.RegisterRequest
 import com.example.futuris.backend.RetrofitClient
@@ -68,6 +76,7 @@ import com.example.futuris.ui.theme.TitleWhite
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.util.Calendar
 
 @Composable
 fun SignupScreen(
@@ -86,10 +95,13 @@ fun SignupScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-    var showPassword by remember { mutableStateOf(false) }
-    var isLoading by remember { mutableStateOf(false) }
 
+    var showPassword by remember { mutableStateOf(false) }
+    var showConfirmPassword by remember { mutableStateOf(false) }
+
+    var isLoading by remember { mutableStateOf(false) }
     var genderExpanded by remember { mutableStateOf(false) }
+    var showBirthDateDialog by remember { mutableStateOf(false) }
 
     var firstNameError by remember { mutableStateOf("") }
     var lastNameError by remember { mutableStateOf("") }
@@ -100,10 +112,12 @@ fun SignupScreen(
     var passwordError by remember { mutableStateOf("") }
     var confirmPasswordError by remember { mutableStateOf("") }
 
+    fun openDatePicker() {
+        if (!isLoading) showBirthDateDialog = true
+    }
+
     FuturisBackground {
-        Box(
-            modifier = Modifier.fillMaxSize()
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -143,7 +157,7 @@ fun SignupScreen(
                             value = firstName,
                             onValueChange = {
                                 if (!isLoading) {
-                                    firstName = it
+                                    firstName = it.trimStart()
                                     firstNameError = ""
                                 }
                             },
@@ -158,7 +172,7 @@ fun SignupScreen(
                             value = lastName,
                             onValueChange = {
                                 if (!isLoading) {
-                                    lastName = it
+                                    lastName = it.trimStart()
                                     lastNameError = ""
                                 }
                             },
@@ -173,17 +187,34 @@ fun SignupScreen(
 
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Column(modifier = Modifier.weight(1f)) {
-                        FuturisField(
-                            value = dateOfBirth,
-                            onValueChange = {
-                                if (!isLoading) {
-                                    dateOfBirth = it
-                                    dateError = ""
-                                }
-                            },
-                            placeholder = "DD/MM/YYYY",
-                            height = 44
-                        )
+                        Box {
+                            FuturisField(
+                                value = dateOfBirth,
+                                onValueChange = {},
+                                placeholder = "Date of birth",
+                                height = 44
+                            )
+
+                            Text(
+                                text = "✦",
+                                color = Color(0xFFCAA8FF),
+                                fontSize = 16.sp,
+                                modifier = Modifier
+                                    .align(Alignment.CenterEnd)
+                                    .padding(end = 12.dp)
+                            )
+
+                            Box(
+                                modifier = Modifier
+                                    .matchParentSize()
+                                    .clickable(
+                                        enabled = !isLoading,
+                                        indication = null,
+                                        interactionSource = remember { MutableInteractionSource() }
+                                    ) { openDatePicker() }
+                            )
+                        }
+
                         if (dateError.isNotEmpty()) ErrorText(dateError)
                     }
 
@@ -194,6 +225,16 @@ fun SignupScreen(
                                 onValueChange = {},
                                 placeholder = "Gender",
                                 height = 44
+                            )
+
+                            Text(
+                                text = "⌄",
+                                color = SoftText,
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier
+                                    .align(Alignment.CenterEnd)
+                                    .padding(end = 12.dp)
                             )
 
                             Box(
@@ -222,6 +263,7 @@ fun SignupScreen(
                                 }
                             }
                         }
+
                         if (genderError.isNotEmpty()) ErrorText(genderError)
                     }
                 }
@@ -232,7 +274,7 @@ fun SignupScreen(
                     value = username,
                     onValueChange = {
                         if (!isLoading) {
-                            username = it
+                            username = it.trim().lowercase()
                             usernameError = ""
                         }
                     },
@@ -247,7 +289,7 @@ fun SignupScreen(
                     value = email,
                     onValueChange = {
                         if (!isLoading) {
-                            email = it
+                            email = it.trim()
                             emailError = ""
                         }
                     },
@@ -285,8 +327,10 @@ fun SignupScreen(
                         }
                     },
                     placeholder = "Confirm password",
-                    passwordVisible = false,
-                    onTogglePassword = null
+                    passwordVisible = showConfirmPassword,
+                    onTogglePassword = {
+                        if (!isLoading) showConfirmPassword = !showConfirmPassword
+                    }
                 )
                 if (confirmPasswordError.isNotEmpty()) ErrorText(confirmPasswordError)
 
@@ -300,18 +344,18 @@ fun SignupScreen(
                     focusManager.clearFocus()
                     var isValid = true
 
-                    if (!isLettersOnly(firstName)) {
-                        firstNameError = "Letters only"
+                    if (!isValidCapitalizedName(firstName)) {
+                        firstNameError = "Start with capital letter"
                         isValid = false
                     }
 
-                    if (!isLettersOnly(lastName)) {
-                        lastNameError = "Letters only"
+                    if (!isValidCapitalizedName(lastName)) {
+                        lastNameError = "Start with capital letter"
                         isValid = false
                     }
 
-                    if (!isValidDate(dateOfBirth)) {
-                        dateError = "Invalid date"
+                    if (dateOfBirth.isBlank()) {
+                        dateError = "Choose your birth date"
                         isValid = false
                     } else if (!isAgeValid(dateOfBirth)) {
                         dateError = "Must be 13+"
@@ -323,8 +367,8 @@ fun SignupScreen(
                         isValid = false
                     }
 
-                    if (username.isBlank()) {
-                        usernameError = "Required"
+                    if (!isValidUsername(username)) {
+                        usernameError = "3-20 chars, start with letter"
                         isValid = false
                     }
 
@@ -334,7 +378,7 @@ fun SignupScreen(
                     }
 
                     if (!isStrongPassword(password)) {
-                        passwordError = "Min 6 chars + 1 number"
+                        passwordError = "Min 6 chars and 1 number"
                         isValid = false
                     }
 
@@ -433,9 +477,355 @@ fun SignupScreen(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
+            if (showBirthDateDialog) {
+                ProfessionalBirthDateDialog(
+                    currentDate = dateOfBirth,
+                    onDismiss = { showBirthDateDialog = false },
+                    onDateSelected = {
+                        dateOfBirth = it
+                        dateError = ""
+                        showBirthDateDialog = false
+                    }
+                )
+            }
+
             FuturisPredictionLoadingOverlay(isVisible = isLoading)
         }
     }
+}
+
+@Composable
+private fun ProfessionalBirthDateDialog(
+    currentDate: String,
+    onDismiss: () -> Unit,
+    onDateSelected: (String) -> Unit
+) {
+    val months = listOf(
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    )
+
+    val today = Calendar.getInstance()
+    val maxAllowedYear = today.get(Calendar.YEAR) - 13
+    val years = (maxAllowedYear downTo 1920).toList()
+
+    var selectedDay by remember { mutableIntStateOf(1) }
+    var selectedMonth by remember { mutableIntStateOf(0) }
+    var selectedYear by remember { mutableIntStateOf(maxAllowedYear - 5) }
+
+    var monthExpanded by remember { mutableStateOf(false) }
+    var dayExpanded by remember { mutableStateOf(false) }
+    var yearExpanded by remember { mutableStateOf(false) }
+
+    val currentParts = currentDate.split("/")
+    if (currentParts.size == 3) {
+        currentParts[0].toIntOrNull()?.let { selectedDay = it }
+        currentParts[1].toIntOrNull()?.let { selectedMonth = it - 1 }
+        currentParts[2].toIntOrNull()?.let { selectedYear = it }
+    }
+
+    val maxDays = daysInMonth(selectedMonth, selectedYear)
+    if (selectedDay > maxDays) selectedDay = maxDays
+
+    Dialog(onDismissRequest = onDismiss) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(28.dp))
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            Color(0xFF271447),
+                            Color(0xFF130B24),
+                            Color(0xFF090411)
+                        )
+                    )
+                )
+                .border(
+                    width = 1.dp,
+                    brush = Brush.linearGradient(
+                        listOf(
+                            Color(0xFFCAA8FF),
+                            Color(0x665B2EA6),
+                            Color(0x33FFFFFF)
+                        )
+                    ),
+                    shape = RoundedCornerShape(28.dp)
+                )
+                .padding(20.dp)
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(
+                    modifier = Modifier
+                        .size(62.dp)
+                        .clip(CircleShape)
+                        .background(
+                            Brush.radialGradient(
+                                listOf(
+                                    Color(0xFFEAD9FF),
+                                    Color(0xFF9C6BFF),
+                                    Color(0xFF4B237A)
+                                )
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "✦",
+                        color = Color.White,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "Choose your birth date",
+                    color = TitleWhite,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "You must be at least 13 years old to continue",
+                    color = SoftText,
+                    fontSize = 12.sp,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    ProfessionalDateDropdown(
+                        label = "Day",
+                        value = selectedDay.toString().padStart(2, '0'),
+                        expanded = dayExpanded,
+                        onExpandedChange = { dayExpanded = it },
+                        modifier = Modifier.weight(0.8f)
+                    ) {
+                        (1..maxDays).forEach { day ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(day.toString().padStart(2, '0'))
+                                },
+                                onClick = {
+                                    selectedDay = day
+                                    dayExpanded = false
+                                }
+                            )
+                        }
+                    }
+
+                    ProfessionalDateDropdown(
+                        label = "Month",
+                        value = months[selectedMonth],
+                        expanded = monthExpanded,
+                        onExpandedChange = { monthExpanded = it },
+                        modifier = Modifier.weight(1.4f)
+                    ) {
+                        months.forEachIndexed { index, month ->
+                            DropdownMenuItem(
+                                text = { Text(month) },
+                                onClick = {
+                                    selectedMonth = index
+                                    monthExpanded = false
+                                }
+                            )
+                        }
+                    }
+
+                    ProfessionalDateDropdown(
+                        label = "Year",
+                        value = selectedYear.toString(),
+                        expanded = yearExpanded,
+                        onExpandedChange = { yearExpanded = it },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        years.forEach { year ->
+                            DropdownMenuItem(
+                                text = { Text(year.toString()) },
+                                onClick = {
+                                    selectedYear = year
+                                    yearExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(Color(0x221E9BFF))
+                        .border(
+                            1.dp,
+                            Color(0x335DA9FF),
+                            RoundedCornerShape(18.dp)
+                        )
+                        .padding(vertical = 12.dp, horizontal = 14.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "${selectedDay.toString().padStart(2, '0')} ${months[selectedMonth]} $selectedYear",
+                        color = Color(0xFFEAD9FF),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(18.dp))
+                            .border(
+                                1.dp,
+                                Color(0x55FFFFFF),
+                                RoundedCornerShape(18.dp)
+                            )
+                            .clickable { onDismiss() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Cancel",
+                            color = SoftText,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(
+                                        Color(0xFFB06CFF),
+                                        Color(0xFF7C4DFF)
+                                    )
+                                )
+                            )
+                            .shadow(
+                                elevation = 12.dp,
+                                shape = RoundedCornerShape(18.dp),
+                                ambientColor = Color(0xFFB06CFF),
+                                spotColor = Color(0xFFB06CFF)
+                            )
+                            .clickable {
+                                val day = selectedDay.toString().padStart(2, '0')
+                                val month = (selectedMonth + 1).toString().padStart(2, '0')
+                                onDateSelected("$day/$month/$selectedYear")
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Confirm",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfessionalDateDropdown(
+    label: String,
+    value: String,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = label,
+            color = SoftText,
+            fontSize = 11.sp,
+            modifier = Modifier.padding(start = 4.dp, bottom = 5.dp)
+        )
+
+        Box {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0x221B1233))
+                    .border(
+                        1.dp,
+                        Color(0x44CAA8FF),
+                        RoundedCornerShape(16.dp)
+                    )
+                    .clickable { onExpandedChange(true) }
+                    .padding(horizontal = 10.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = value,
+                        color = TitleWhite,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.width(4.dp))
+
+                    Text(
+                        text = "⌄",
+                        color = Color(0xFFCAA8FF),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { onExpandedChange(false) }
+            ) {
+                content()
+            }
+        }
+    }
+}
+
+private fun daysInMonth(month: Int, year: Int): Int {
+    return when (month) {
+        0, 2, 4, 6, 7, 9, 11 -> 31
+        3, 5, 8, 10 -> 30
+        1 -> if (isLeapYear(year)) 29 else 28
+        else -> 31
+    }
+}
+
+private fun isLeapYear(year: Int): Boolean {
+    return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
 }
 
 @Composable
@@ -454,9 +844,7 @@ private fun FuturisPredictionLoadingOverlay(isVisible: Boolean) {
                 .alpha(overlayAlpha),
             contentAlignment = Alignment.Center
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 FuturisPredictionLoader()
 
                 Spacer(modifier = Modifier.height(18.dp))
@@ -629,22 +1017,43 @@ fun ErrorText(message: String) {
     Text(message, color = Color.Red, fontSize = 12.sp)
 }
 
-fun isLettersOnly(text: String) =
-    text.isNotBlank() && text.all { it.isLetter() || it.isWhitespace() }
+fun isValidCapitalizedName(text: String): Boolean {
+    val clean = text.trim()
+    return clean.length >= 2 &&
+            clean.first().isUpperCase() &&
+            clean.all { it.isLetter() || it == '-' || it == '\'' || it == ' ' }
+}
+
+fun isValidUsername(username: String): Boolean {
+    val clean = username.trim()
+    val regex = Regex("^[a-z][a-z0-9_]{2,19}$")
+    return regex.matches(clean)
+}
 
 fun isValidEmail(email: String) =
-    android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()
 
 fun isStrongPassword(password: String) =
     password.length >= 6 && password.any { it.isDigit() }
 
-fun isValidDate(date: String): Boolean {
-    val regex = Regex("""\d{2}/\d{2}/\d{4}""")
-    return regex.matches(date)
-}
-
 fun isAgeValid(date: String): Boolean {
-    val year = date.split("/").last().toIntOrNull() ?: return false
-    val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
-    return currentYear - year >= 13
+    return try {
+        val parts = date.split("/")
+        val day = parts[0].toInt()
+        val month = parts[1].toInt() - 1
+        val year = parts[2].toInt()
+
+        val birthDate = Calendar.getInstance().apply {
+            set(year, month, day, 0, 0, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+
+        val thirteenYearsAgo = Calendar.getInstance().apply {
+            add(Calendar.YEAR, -13)
+        }
+
+        !birthDate.after(thirteenYearsAgo)
+    } catch (e: Exception) {
+        false
+    }
 }

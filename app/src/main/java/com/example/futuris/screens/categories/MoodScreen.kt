@@ -454,10 +454,10 @@ private fun MoodCenterImage() {
         )
 
         Image(
-            painter = painterResource(id = R.drawable.card_mood),
+            painter = painterResource(id = R.drawable.mood),
             contentDescription = "Mood category image",
             contentScale = ContentScale.Fit,
-            modifier = Modifier.size(175.dp)
+            modifier = Modifier.size(230.dp)
         )
     }
 }
