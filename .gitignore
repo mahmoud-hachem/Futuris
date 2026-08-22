@@ -1,17 +1,23 @@
 # Android Studio / IntelliJ
 *.iml
 .idea/
-.gradle/
-local.properties
 
-# Android build output
+# Gradle
+.gradle/
 build/
 app/build/
-captures/
+
+# Local Android configuration
+local.properties
+
+# Native build files
 .externalNativeBuild/
 .cxx/
 
-# Node dependencies
+# Captures
+captures/
+
+# Node dependencies, if any local tooling creates them
 node_modules/
 
 # Environment variables
